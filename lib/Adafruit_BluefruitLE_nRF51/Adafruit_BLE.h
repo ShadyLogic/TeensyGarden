@@ -40,7 +40,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 #include "utility/common_header.h"
-#include "utility/errors.h"
+// #include "utility/errors.h"
 #include "utility/TimeoutTimer.h"
 #include "Adafruit_ATParser.h"
 

@@ -37,11 +37,11 @@
 #endif
 
 #if DO_DEBUG_PRINTS
-  #define DEBUG_PRINT(x)   MH.serPtr()->print(x)
-  #define DEBUG_PRINTLN(x) MH.serPtr()->println(x)
+  #define DEBUG_PRINT(...)   MH.serPtr()->print(__VA_ARGS__)
+  #define DEBUG_PRINTLN(...) MH.serPtr()->println(__VA_ARGS__)
 #else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINT(...)
+  #define DEBUG_PRINTLN(...)
 #endif
 
 

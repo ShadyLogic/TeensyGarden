@@ -568,7 +568,7 @@ void MenuManager::printHelp(Stream *serialPtr, bool handleUsbOnlyOptions)
 {
    //showPersistentStrikerSettings(serialPtr, handleUsbOnlyOptions);
     serialPtr->println(F(EXHIBIT_NAME_VERSION));
-    serialPtr->println(F("Compiled on: " __DATE__ ", at" __TIME__));
+    serialPtr->println(F("Compiled on: " __DATE__ ", at " __TIME__));
 
     check_mem();
 
