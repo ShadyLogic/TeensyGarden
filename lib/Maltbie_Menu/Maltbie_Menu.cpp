@@ -573,6 +573,7 @@ void MenuManager::printHelp(Stream *serialPtr, bool handleUsbOnlyOptions)
     check_mem();
 
    serialPtr->print(F(
+            "H  - Display Help Menu\n"
             "M  - Display Menu Commands\n"
             "S  - Save Current Settings to EEPROM\n"
             "~  - Print Config (EEPROM) in Hex\n"
@@ -587,9 +588,12 @@ void MenuManager::printHelp(Stream *serialPtr, bool handleUsbOnlyOptions)
                             "Z  - Reset All BLE Settings to Factory Defaults\n"
                             "$  - Save BLE Name/PW\n"
                             "^  - Set BLE Name [^NAME]\n"
-                            "&  - Set BLE Password [&PASS]"));
+                            "&  - Set BLE Password [&PASS]\n"));
    }
 #endif
+
+    serialPtr->println();
+    printMenu();
     serialPtr->println();
 
    if (isConfigEEPromMismatch(OFFSET_STOREEE, (uint8_t *)&StoreEE, sizeof(StoreEE)))
@@ -798,7 +802,7 @@ void MenuManager::handleLaptopInput(void)
     WATCHDOG_RESET
 
 #if ENABLE_BLE
-    if (blueToothSerial.isConnected())          // Checks if bluetooth is connected and switches the Serial output
+    if (blueToothSerial.isConnected() && blueToothSerial.havePassWordMatch())          // Checks if bluetooth is connected and switches the Serial output
 	{
 		MH.setSerialOutputStream(&blueToothSerial);
 	} else {

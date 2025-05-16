@@ -14,6 +14,7 @@
 
 #if USE_ETHERNET
     #ifdef TEENSYDUINO
+        #define err_t s8_t      // Required to fix conflict with Adafruit_BluefruitLE_nRF51
         #include <QNEthernet.h>
     #else
         #include <Ethernet.h>
