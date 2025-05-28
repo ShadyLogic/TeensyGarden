@@ -37,6 +37,7 @@ void digitalClockDisplay();
 void printDigits(int digits);
 void printGardenStatus(void);
 void setRTC(void);
+void toggleValves(void);
 
 
 void setup() 
@@ -58,6 +59,7 @@ void setup()
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);    
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);    
     MainMenu.addOption('D', "Display Time", digitalClockDisplay);    
+    MainMenu.addOption('T', "Toggle Valves", toggleValves);    
 
     GM.addZone(pepperZone);
     GM.addZone(tomatoZone);
@@ -88,21 +90,21 @@ void setup()
 }
 
 void loop(){
-    static int curSec = 0;
 	WATCHDOG_RESET
 	MM.handleLaptopInput();
 
-    if (second(now()) != curSec){
-        curSec = second(now());
-        if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
-        if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
-        if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
-        if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
-        if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
-        if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
-        if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
-        if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
-    }
+    // static int curSec = 0;
+    // if (second(now()) != curSec){
+    //     curSec = second(now());
+    //     if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
+    //     if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
+    //     if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
+    //     if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
+    //     if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
+    //     if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
+    //     if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
+    //     if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
+    // }
     delay(1);
 }
 
@@ -174,4 +176,14 @@ void setRTC()
 
     MH.serPtr()->print("NEW TIME: ");
     digitalClockDisplay();
+}
+
+void toggleValves()
+{
+    bool toggleState = !digitalRead(6);
+    digitalWrite(6, toggleState);
+    digitalWrite(7, toggleState);
+
+    MH.serPtr()->print("Valves are now ");
+    toggleState ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
 }

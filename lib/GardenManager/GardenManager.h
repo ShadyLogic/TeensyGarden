@@ -23,7 +23,7 @@ enum ScheduleType
 class Zone {
 public:
     Zone(){}
-    Zone(const char[20], uint8_t, uint8_t, uint8_t = NULL);
+    Zone(const char[20], uint8_t, uint8_t, uint8_t = 200);
     uint16_t moisture(void);
     const char* name(void) {return m_zoneName;}
     void openValve(void);
