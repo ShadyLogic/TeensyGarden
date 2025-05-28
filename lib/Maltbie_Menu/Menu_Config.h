@@ -41,12 +41,15 @@ struct EEPROM_Struct
 // Application Specific Config Here //                                                      //STRUCT DEFINITION//
 //////////////////////////////////////////////////////
 //                                                  //
-    uint32_t            deviceIP;
-    uint32_t            gateway;
-    uint32_t            subnet;
-    uint32_t            dns;
-    uint32_t            remoteIP;
-    uint16_t            remotePort;
+    uint16_t    zoneAwetThreshold;
+    uint16_t    zoneAdryThreshold;
+    uint16_t    zoneBwetThreshold;
+    uint16_t    zoneBdryThreshold;
+    uint16_t    zoneCwetThreshold;
+    uint16_t    zoneCdryThreshold;
+    uint16_t    zoneDwetThreshold;
+    uint16_t    zoneDdryThreshold;
+    
 //                                                  //
 //////////////////////////////////////////////////////
     uint16_t    eeVersion;  // Change this if the eeprom layout changes
@@ -60,12 +63,14 @@ const EEPROM_Struct STOREEE_DEFAULTS =
 // Application Default Config Here //                                                      //STRUCT DEFINITION//
 //////////////////////////////////////////////////////
 //                                                  //
-    704751808,                  // deviceIP - 192.168.1.42    
-    4278298816,                 // gateway  - 192.168.1.255    
-    16777215,                   // subnet   - 255.255.255.255    
-    134744072,                  // dns      - 8.8.8.8    
-    838969536,                  // remoteIP - 192.168.1.50
-    50000,                      // remotePort
+    500,                    // zoneAwetThreshold
+    0,                      // zoneAdryThreshold
+    500,                    // zoneBwetThreshold
+    0,                      // zoneBdryThreshold
+    500,                    // zoneCwetThreshold
+    0,                      // zoneCdryThreshold
+    500,                    // zoneDwetThreshold
+    0,                      // zoneDdryThreshold
 //                                                  //
 //////////////////////////////////////////////////////
     EEPROM_END_VER_SIG,

@@ -5,19 +5,29 @@
 
 #include <GardenManager.h>
 
+#define PEPPER_SOLENOID_PIN     2
+#define TOMATO_SOLENOID_PIN     3
+#define CUCUMBER_SOLENOID_PIN   4
+#define MELON_SOLENOID_PIN      5
+
+#define PEPPER_SENSOR_PIN       23
+#define TOMATO_SENSOR_PIN       22
+#define CUCUMBER_SENSOR_PIN     21
+#define MELON_SENSOR_PIN        19
+
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
-char currentTime[20] = "10:00 05-15-2025";
+char currentTime[20] = "10:00 05/15/2025";
 
 MenuManager MM;
 Maltbie_Helper MH;
 Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
 
 GardenManager GM;
-Zone pepperZone     ("Peppers",     23, 2);
-Zone tomatoZone     ("Tomatoes",    22, 3);
-Zone cucumberZone   ("Cucumbers",   21, 4);
-Zone melonZone      ("Melons",      19, 5);
+Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN);
+Zone tomatoZone     ("Tomatoes",    TOMATO_SENSOR_PIN,      TOMATO_SOLENOID_PIN);
+Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN);
+Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN);
 
 bool debugPrint = false;
 
@@ -54,32 +64,46 @@ void setup()
     GM.addZone(cucumberZone);
     GM.addZone(melonZone);
 
-    pinMode(2, OUTPUT);
-    digitalWrite(2, LOW);
-
     MM.printHelp(&Serial, true);
 
+    pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
+    pinMode(7, OUTPUT);
+    pinMode(8, OUTPUT);
+    pinMode(9, OUTPUT);
+
     WATCHDOG_RESET
+
+    // digitalWrite(2, HIGH);
+    // digitalWrite(3, HIGH);
+    // digitalWrite(4, HIGH);
+    // digitalWrite(5, HIGH);
+    // digitalWrite(6, HIGH);
+    // digitalWrite(7, HIGH);
+    // digitalWrite(8, HIGH);
+    // digitalWrite(9, HIGH);
 }
 
-void loop() 
-{
-    static uint8_t i = 0;
+void loop(){
+    static int curSec = 0;
 	WATCHDOG_RESET
 	MM.handleLaptopInput();
-    // if (second(now() % 2 > 0))
-    // {
-    //     if (debugPrint) MH.serPtr()->println("HIGH\n");
-    //     digitalWrite(2, HIGH);
-    // }
-    // else
-    // {
-    //     if (debugPrint) MH.serPtr()->println("LOW\n");
-    //     digitalWrite(2, LOW);
-    // }
-    analogWrite(2, (i%256));
-    i++;
-    delay(10);
+
+    if (second(now()) != curSec){
+        curSec = second(now());
+        if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
+        if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
+        if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
+        if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
+        if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
+        if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
+        if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
+        if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
+    }
+    delay(1);
 }
 
 

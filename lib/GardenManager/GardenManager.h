@@ -10,18 +10,41 @@
 #include <Maltbie_Helper.h>
 #include <TimeLib.h>
 
+enum ScheduleType
+{
+    NONE,
+    DOW,
+    INTERVAL,
+    SENSOR
+};
+
+
+
 class Zone {
 public:
     Zone(){}
-    Zone(const char[20], uint8_t, uint8_t);
+    Zone(const char[20], uint8_t, uint8_t, uint8_t = NULL);
     uint16_t moisture(void);
     const char* name(void) {return m_zoneName;}
+    void openValve(void);
+    void closeValve(void);
+    void logLastWaterTime(void) {m_lastWaterTime = now();}
+    void handleSchedule(void);
 
 private:
-    char    m_zoneName[20];
-    uint8_t m_moistureSensorPin;
-    uint8_t m_valvePin;
-    time_t  m_lastWaterTime;
+    char            m_zoneName[20];
+    uint8_t         m_moistureSensorPin;
+    uint8_t         m_valvePin1;
+    uint8_t         m_valvePin2;
+    uint16_t        m_wetThreshold;
+    uint16_t        m_dryThreshold;
+    ScheduleType    m_schedType;
+    time_t          m_lastWaterTime;
+    time_t          m_minTimeBetweenWater;
+
+    void            handleSchedDOW(void);
+    void            handleSchedInterval(void);
+    void            handleSchedSensor(void);
 };
 
 
