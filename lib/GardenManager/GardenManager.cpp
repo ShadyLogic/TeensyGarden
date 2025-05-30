@@ -12,16 +12,31 @@ void GardenManager::addZone(Zone newZone)
     m_zonesIndex++;
 }
 
-void GardenManager::printZoneInfo(Stream* output)
+void GardenManager::printZoneStatus(Stream* output)
 {
     output->println("***** Zone Info *****");
     for (int i = 0; i < m_zonesIndex; i++)
     {
-        output->print(m_zones[i].name());
-        output->print(" Moisture Level: ");
-        output->println(m_zones[i].moisture());
+        m_zones[i].printStatus(output);
+        output->println();
     }
-    output->println();
+    output->println("*********************");
+}
+
+void GardenManager::closeAllValves()
+{
+    for (int i = 0; i < m_zonesIndex; i++)
+    {
+        m_zones[i].closeValve();
+    }
+}
+
+void GardenManager::openAllValves()
+{
+    for (int i = 0; i < m_zonesIndex; i++)
+    {
+        m_zones[i].openValve();
+    }
 }
 
 // ********   Z O N E   M E T H O D S   ********
@@ -56,6 +71,15 @@ void Zone::closeValve()
 {
     digitalWrite(m_valvePin1, LOW);
     digitalWrite(m_valvePin2, LOW);
+}
+
+void Zone::printStatus(Stream* output)
+{
+    output->println(m_zoneName);
+    output->print("Moisture Level: ");
+    output->println(moisture());
+    output->print("Valve is ");
+    digitalRead(m_valvePin1) ? output->println("ON") : output->println("OFF");
 }
 
 void Zone::handleSchedule()

@@ -28,8 +28,10 @@ public:
     const char* name(void) {return m_zoneName;}
     void openValve(void);
     void closeValve(void);
+    bool valveIsOn(void) {return digitalRead(m_valvePin1);}
     void logLastWaterTime(void) {m_lastWaterTime = now();}
     void handleSchedule(void);
+    void printStatus(Stream*);
 
 private:
     char            m_zoneName[20];
@@ -52,7 +54,9 @@ class GardenManager {
 public:
     GardenManager(){}
     void addZone(Zone);
-    void printZoneInfo(Stream*);
+    void printZoneStatus(Stream*);
+    void closeAllValves();
+    void openAllValves();
 
 private:
     uint8_t m_zonesIndex = 0;
