@@ -33,11 +33,15 @@ bool debugPrint = false;
 
 time_t getTeensy3Time();
 void print12Hour(int digits);
-void digitalClockDisplay();
+void digitalClockDisplay(time_t time);
+void digitalClockDisplayNow(void) {digitalClockDisplay(now());}
 void printDigits(int digits);
 void printGardenStatus(void);
 void setRTC(void);
 void toggleValves(void);
+
+void timeTest(void);
+time_t lastTime;
 
 
 void setup() 
@@ -58,7 +62,7 @@ void setup()
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);    
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);    
-    MainMenu.addOption('D', "Display Time", digitalClockDisplay);    
+    MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);    
     MainMenu.addOption('T', "Toggle Valves", toggleValves);    
 
     GM.addZone(pepperZone);
@@ -87,11 +91,14 @@ void setup()
     // digitalWrite(7, HIGH);
     // digitalWrite(8, HIGH);
     // digitalWrite(9, HIGH);
+
+    lastTime = now();
 }
 
 void loop(){
 	WATCHDOG_RESET
 	MM.handleLaptopInput();
+    timeTest();
 
     // static int curSec = 0;
     // if (second(now()) != curSec){
@@ -105,17 +112,17 @@ void loop(){
     //     if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
     //     if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
     // }
-    delay(1);
+    delay(1000);
 }
 
 
 
-void digitalClockDisplay(){
+void digitalClockDisplay(time_t time){
     // digital clock display of the time
-    print12Hour(hour(now()));
-    printDigits(minute(now()));
-    printDigits(second(now()));
-    if (hour(now()) >= 12)
+    print12Hour(hour(time));
+    printDigits(minute(time));
+    printDigits(second(time));
+    if (hour(time) >= 12)
     {
         MH.serPtr()->print("PM,");
     }
@@ -175,7 +182,7 @@ void setRTC()
     setTime(now());
 
     MH.serPtr()->print("NEW TIME: ");
-    digitalClockDisplay();
+    digitalClockDisplayNow();
 }
 
 void toggleValves()
@@ -186,4 +193,18 @@ void toggleValves()
 
     MH.serPtr()->print("Valves are now ");
     toggleState ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+}
+
+void timeTest()
+{
+    Serial.print("Now - Last = ");
+    Serial.println(now() - lastTime);
+    Serial.print("Seconds Since Last = ");
+    Serial.println(numberOfSeconds(now() - lastTime));
+    Serial.print("Minutes Since Last = ");
+    Serial.println(numberOfMinutes(now() - lastTime));
+    Serial.print("Now = ");
+    digitalClockDisplayNow();
+    Serial.print("In 1.5 Hours = ");
+    digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
 }
