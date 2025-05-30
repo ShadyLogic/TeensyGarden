@@ -72,7 +72,7 @@ void setup()
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
-    MainMenu.addOption('D', "Display Time", digitalClockDisplay);
+    MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
     MainMenu.addOption('F', "Print Garden Status", printGardenStatus);
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('V', "Clicky Valve Test", clickyValveTest);
