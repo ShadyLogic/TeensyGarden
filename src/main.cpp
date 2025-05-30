@@ -5,15 +5,19 @@
 
 #include <GardenManager.h>
 
-#define PEPPER_SOLENOID_PIN     2
-#define TOMATO_SOLENOID_PIN     3
-#define CUCUMBER_SOLENOID_PIN   4
-#define MELON_SOLENOID_PIN      5
+#define PEPPER_SOLENOID_PIN_1       2
+#define PEPPER_SOLENOID_PIN_2       3
+#define TOMATO_SOLENOID_PIN_1       4
+#define TOMATO_SOLENOID_PIN_2       5
+#define CUCUMBER_SOLENOID_PIN_1     6
+#define CUCUMBER_SOLENOID_PIN_2     7
+#define MELON_SOLENOID_PIN_1        8
+#define MELON_SOLENOID_PIN_2        9
 
-#define PEPPER_SENSOR_PIN       23
-#define TOMATO_SENSOR_PIN       22
-#define CUCUMBER_SENSOR_PIN     21
-#define MELON_SENSOR_PIN        19
+#define PEPPER_SENSOR_PIN       20
+#define TOMATO_SENSOR_PIN       21
+#define CUCUMBER_SENSOR_PIN     22
+#define MELON_SENSOR_PIN        23
 
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
@@ -24,12 +28,15 @@ Maltbie_Helper MH;
 Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
 
 GardenManager GM;
-Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN);
-Zone tomatoZone     ("Tomatoes",    TOMATO_SENSOR_PIN,      TOMATO_SOLENOID_PIN);
-Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN);
-Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN);
+Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN_1, PEPPER_SOLENOID_PIN_2);
+Zone tomatoZone     ("Tomatoes",    TOMATO_SENSOR_PIN,      TOMATO_SOLENOID_PIN_1, TOMATO_SOLENOID_PIN_2);
+Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN_1, CUCUMBER_SOLENOID_PIN_2);
+Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN_1, MELON_SOLENOID_PIN_2);
 
 bool debugPrint = false;
+
+Timer_ms    sensorTimer;
+uint8_t     menuValve = 0;
 
 time_t getTeensy3Time();
 void print12Hour(int digits);
@@ -37,7 +44,10 @@ void digitalClockDisplay();
 void printDigits(int digits);
 void printGardenStatus(void);
 void setRTC(void);
-void toggleValves(void);
+void toggleValve(void);
+void clickyValveTest(void);
+void closeAllValves(void);
+void openAllValves(void);
 
 
 void setup() 
@@ -53,13 +63,17 @@ void setup()
 	MM.setupBLE();
 	MM.setupEEPROM();
 	MM.registerMenu(&MainMenu);
-    MM.startWatchdog(20);
+    MM.startWatchdog();
 
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
-    MainMenu.addOption('B', "Show Debug Prints", &debugPrint);    
-    MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);    
-    MainMenu.addOption('D', "Display Time", digitalClockDisplay);    
-    MainMenu.addOption('T', "Toggle Valves", toggleValves);    
+    MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
+    MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
+    MainMenu.addOption('D', "Display Time", digitalClockDisplay);
+    MainMenu.addOption('F', "Print Garden Status", printGardenStatus);
+    MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
+    MainMenu.addOption('V', "Clicky Valve Test", clickyValveTest);
+    MainMenu.addOption('+', "Open All Valves", openAllValves);
+    MainMenu.addOption('-', "Close All Vavles", closeAllValves);
 
     GM.addZone(pepperZone);
     GM.addZone(tomatoZone);
@@ -67,15 +81,6 @@ void setup()
     GM.addZone(melonZone);
 
     MM.printHelp(&Serial, true);
-
-    pinMode(2, OUTPUT);
-    pinMode(3, OUTPUT);
-    pinMode(4, OUTPUT);
-    pinMode(5, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(7, OUTPUT);
-    pinMode(8, OUTPUT);
-    pinMode(9, OUTPUT);
 
     WATCHDOG_RESET
 
@@ -92,6 +97,13 @@ void setup()
 void loop(){
 	WATCHDOG_RESET
 	MM.handleLaptopInput();
+
+    // if (!sensorTimer.isActive())
+    // {
+    //     MH.serPtr()->print("Moisture Level: ");
+    //     MH.serPtr()->println(pepperZone.moisture());
+    //     sensorTimer.Start(1000);
+    // }
 
     // static int curSec = 0;
     // if (second(now()) != curSec){
@@ -159,7 +171,7 @@ void print12Hour(int digits){
 
 void printGardenStatus()
 {
-    GM.printZoneInfo(MH.serPtr());
+    GM.printZoneStatus(MH.serPtr());
 }
 
 void setRTC()
@@ -178,12 +190,66 @@ void setRTC()
     digitalClockDisplay();
 }
 
-void toggleValves()
+void toggleValve()
 {
-    bool toggleState = !digitalRead(6);
-    digitalWrite(6, toggleState);
-    digitalWrite(7, toggleState);
+    switch (menuValve)
+    {
+        case 1:
+            pepperZone.valveIsOn() ? pepperZone.closeValve() : pepperZone.openValve();
+            MH.serPtr()->print("Pepper Zone Valve is now ");
+            pepperZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+        break;
 
-    MH.serPtr()->print("Valves are now ");
-    toggleState ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+        case 2:
+            tomatoZone.valveIsOn() ? tomatoZone.closeValve() : tomatoZone.openValve();
+            MH.serPtr()->print("Tomato Zone Valve is now ");
+            tomatoZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+        break;
+
+        case 3:
+            cucumberZone.valveIsOn() ? cucumberZone.closeValve() : cucumberZone.openValve();
+            MH.serPtr()->print("Cucumber Zone Valve is now ");
+            cucumberZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+        break;
+
+        case 4:
+            melonZone.valveIsOn() ? melonZone.closeValve() : melonZone.openValve();
+            MH.serPtr()->print("Melon Zone Valve is now ");
+            melonZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+        break;
+
+        default:
+        break;
+    }
+    menuValve = 0;
+}
+
+void clickyValveTest()
+{
+    pepperZone.openValve();
+    delay(500);
+    pepperZone.closeValve();
+    delay(500);
+    tomatoZone.openValve();
+    delay(500);
+    tomatoZone.closeValve();
+    delay(500);
+    cucumberZone.openValve();
+    delay(500);
+    cucumberZone.closeValve();
+    delay(500);
+    melonZone.openValve();
+    delay(500);
+    melonZone.closeValve();
+    delay(500);
+}
+
+void closeAllValves()
+{
+    GM.closeAllValves();
+}
+
+void openAllValves()
+{
+    GM.openAllValves();
 }
