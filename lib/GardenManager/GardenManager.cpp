@@ -6,7 +6,7 @@
 
 // ********   G A R D E N   M A N A G E R   M E T H O D S   ********
 
-void GardenManager::addZone(Zone newZone)
+void GardenManager::addZone(Zone* newZone)
 {
     m_zones[m_zonesIndex] = newZone;
     m_zonesIndex++;
@@ -17,7 +17,7 @@ void GardenManager::printZoneStatus(Stream* output)
     output->println("***** Zone Info *****");
     for (int i = 0; i < m_zonesIndex; i++)
     {
-        m_zones[i].printStatus(output);
+        m_zones[i]->printStatus(output);
         output->println();
     }
     output->println("*********************");
@@ -27,7 +27,7 @@ void GardenManager::closeAllValves()
 {
     for (int i = 0; i < m_zonesIndex; i++)
     {
-        m_zones[i].closeValve();
+        m_zones[i]->closeValve();
     }
 }
 
@@ -35,7 +35,23 @@ void GardenManager::openAllValves()
 {
     for (int i = 0; i < m_zonesIndex; i++)
     {
-        m_zones[i].openValve();
+        m_zones[i]->openValve();
+    }
+}
+
+void GardenManager::maintain()
+{
+    for (int i = 0; i < m_zonesIndex; i++)
+    {
+        if (m_zones[i]->valveTimerRunning() && m_zones[i]->valveTimerExpired())
+        {
+            {
+                MH.serPtr()->print("CLOSING ");
+                MH.serPtr()->print(m_zones[i]->name());
+                MH.serPtr()->print(" VALVE");
+                m_zones[i]->closeValve();
+            }
+        }
     }
 }
 
@@ -71,6 +87,7 @@ void Zone::closeValve()
 {
     digitalWrite(m_valvePin1, LOW);
     digitalWrite(m_valvePin2, LOW);
+    m_valveTimerRunning = false;
 }
 
 void Zone::printStatus(Stream* output)
@@ -107,8 +124,6 @@ void Zone::handleSchedule()
         case NONE:
         default:
         break;
-
-        
     }
 }
 
@@ -125,6 +140,10 @@ void Zone::handleSchedInterval()
 void Zone::handleSchedSensor()
 {
     if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+}
 
-    
+void Zone::setTimeToTurnOffValve(time_t newTime)
+{
+    m_timeToTurnOffValve = newTime; 
+    m_valveTimerRunning = true;
 }

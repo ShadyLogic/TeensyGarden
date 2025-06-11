@@ -55,6 +55,7 @@
 void printIPAddress(Stream*, uint32_t);
 void kickTheDog(void);
 void unassignedCommand(void);
+void duplicateCommand(char);
 
 enum DataTypes
 {

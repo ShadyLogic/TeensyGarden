@@ -49,9 +49,13 @@ void toggleValve(void);
 void clickyValveTest(void);
 void closeAllValves(void);
 void openAllValves(void);
+void setValveRunTime(void);
 
 void timeTest(void);
 time_t lastTime;
+
+bool funkyLights = false;
+uint8_t valveRunTime = 0;
 
 
 void setup() 
@@ -78,24 +82,27 @@ void setup()
     MainMenu.addOption('V', "Clicky Valve Test", clickyValveTest);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
+    MainMenu.addOption('E', "Time Test", timeTest);
+    MainMenu.addOption('G', "Valve Run Time (min)", &valveRunTime, 255, 0, setValveRunTime);
+    MainMenu.addOption('I', "Funky Lights", &funkyLights);
 
-    GM.addZone(pepperZone);
-    GM.addZone(tomatoZone);
-    GM.addZone(cucumberZone);
-    GM.addZone(melonZone);
+    GM.addZone(&pepperZone);
+    GM.addZone(&tomatoZone);
+    GM.addZone(&cucumberZone);
+    GM.addZone(&melonZone);
 
     MM.printHelp(&Serial, true);
 
     WATCHDOG_RESET
 
-    // digitalWrite(2, HIGH);
-    // digitalWrite(3, HIGH);
-    // digitalWrite(4, HIGH);
-    // digitalWrite(5, HIGH);
-    // digitalWrite(6, HIGH);
-    // digitalWrite(7, HIGH);
-    // digitalWrite(8, HIGH);
-    // digitalWrite(9, HIGH);
+    digitalWrite(2, LOW);
+    digitalWrite(3, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(7, LOW);
+    digitalWrite(8, LOW);
+    digitalWrite(9, LOW);
 
     lastTime = now();
 }
@@ -103,6 +110,7 @@ void setup()
 void loop(){
 	WATCHDOG_RESET
 	MM.handleLaptopInput();
+    GM.maintain();
 
     // if (!sensorTimer.isActive())
     // {
@@ -110,21 +118,22 @@ void loop(){
     //     MH.serPtr()->println(pepperZone.moisture());
     //     sensorTimer.Start(1000);
     // }
-    timeTest();
-
-    // static int curSec = 0;
-    // if (second(now()) != curSec){
-    //     curSec = second(now());
-    //     if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
-    //     if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
-    //     if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
-    //     if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
-    //     if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
-    //     if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
-    //     if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
-    //     if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
-    // }
-    delay(1000);
+    if (funkyLights)
+    {
+        static int curSec = 0;
+        if (second(now()) != curSec){
+            curSec = second(now());
+            if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
+            if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
+            if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
+            if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
+            if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
+            if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
+            if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
+            if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
+        }
+    }
+    delay(10);
 }
 
 
@@ -269,8 +278,19 @@ void timeTest()
     Serial.println(numberOfSeconds(now() - lastTime));
     Serial.print("Minutes Since Last = ");
     Serial.println(numberOfMinutes(now() - lastTime));
+    Serial.print("Hours Since Last = ");
+    Serial.println(numberOfHours(now() - lastTime));
     Serial.print("Now = ");
     digitalClockDisplayNow();
     Serial.print("In 1.5 Hours = ");
     digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
+}
+
+void setValveRunTime()
+{
+    pepperZone.openValve();
+    pepperZone.setTimeToTurnOffValve(now() + (SECS_PER_MIN * valveRunTime));
+    Serial.print("Valve will turn off at ");
+    digitalClockDisplay(pepperZone.timeToTurnOffValve());
+    valveRunTime = 0;
 }

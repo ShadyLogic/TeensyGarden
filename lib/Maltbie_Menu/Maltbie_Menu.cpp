@@ -122,9 +122,7 @@ MenuOption* Menu::addOption(char comChar, String desc, uint16_t *i16, uint32_t u
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, i16, uLim, lLim, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -135,9 +133,7 @@ MenuOption* Menu::addOption(char comChar, String desc, uint32_t *ipad, IPAddress
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, ipad, ippointer, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -148,9 +144,7 @@ MenuOption* Menu::addOption(char comChar, String desc, double *dub, long uLim, l
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, dub, uLim, lLim, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -161,9 +155,7 @@ MenuOption* Menu::addOption(char comChar, String desc, char* ch, void (*f)())
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, ch, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -174,9 +166,7 @@ MenuOption* Menu::addOption(char comChar, String desc, bool *boo, void (*f)())
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, boo, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -187,9 +177,7 @@ MenuOption* Menu::addOption(char comChar, String desc, void (*f)())
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, f));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -200,9 +188,7 @@ MenuOption* Menu::addOption(char comChar, String desc, void *data, bool flag)
     {
         return &(m_options[m_numOptions++] = MenuOption(comChar, desc, data, flag));
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(comChar);
-        for (;;);
+        duplicateCommand(comChar);
     }
     return nullptr;;
 }
@@ -214,9 +200,7 @@ MenuOption* Menu::addOption(MenuOption op)
         return &(m_options[m_numOptions++] = op);
         m_numOptions++;
     } else {
-        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
-        MH.serPtr()->println(op.m_commandChar);
-        for (;;);
+        duplicateCommand(op.m_commandChar);
     }
     return nullptr;;
 }
@@ -1055,4 +1039,14 @@ void printIPAddress(Stream* s, uint32_t ip) {
 void unassignedCommand()
 {
     MH.serPtr()->println(F("NO FUNCTION REGISTERED"));
+}
+
+void duplicateCommand(char comChar)
+{
+    while (true)
+    {
+        MH.serPtr()->print(F("DUPLICATE COMMAND CHAR: "));
+        MH.serPtr()->println(comChar);
+        delay(100);
+    }
 }
