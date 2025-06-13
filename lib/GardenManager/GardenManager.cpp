@@ -39,6 +39,13 @@ void GardenManager::openAllValves()
     }
 }
 
+Zone* GardenManager::valveRunTime(int zone, int runTime)
+{
+    m_zones[zone]->openValve();
+    m_zones[zone]->setTimeToTurnOffValve(now() + (SECS_PER_MIN * runTime));
+    return m_zones[zone];
+}
+
 void GardenManager::maintain()
 {
     for (int i = 0; i < m_zonesIndex; i++)
@@ -46,9 +53,9 @@ void GardenManager::maintain()
         if (m_zones[i]->valveTimerRunning() && m_zones[i]->valveTimerExpired())
         {
             {
-                MH.serPtr()->print("CLOSING ");
+                MH.serPtr()->print("Closing ");
                 MH.serPtr()->print(m_zones[i]->name());
-                MH.serPtr()->print(" VALVE");
+                MH.serPtr()->print(" valve");
                 m_zones[i]->closeValve();
             }
         }

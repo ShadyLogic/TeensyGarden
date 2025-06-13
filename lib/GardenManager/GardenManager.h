@@ -64,6 +64,7 @@ public:
     void printZoneStatus(Stream*);
     void closeAllValves();
     void openAllValves();
+    Zone* valveRunTime(int, int);
     void maintain();
 
 private:

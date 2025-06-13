@@ -50,12 +50,12 @@ void clickyValveTest(void);
 void closeAllValves(void);
 void openAllValves(void);
 void setValveRunTime(void);
+char valveRunTime[15] = "0-0";
 
 void timeTest(void);
 time_t lastTime;
 
 bool funkyLights = false;
-uint8_t valveRunTime = 0;
 
 
 void setup() 
@@ -83,7 +83,7 @@ void setup()
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
     MainMenu.addOption('E', "Time Test", timeTest);
-    MainMenu.addOption('G', "Valve Run Time (min)", &valveRunTime, 255, 0, setValveRunTime);
+    MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", valveRunTime, setValveRunTime);
     MainMenu.addOption('I', "Funky Lights", &funkyLights);
 
     GM.addZone(&pepperZone);
@@ -105,6 +105,8 @@ void setup()
     digitalWrite(9, LOW);
 
     lastTime = now();
+
+    memset(valveRunTime, '\0', sizeof(valveRunTime));
 }
 
 void loop(){
@@ -272,25 +274,29 @@ void openAllValves()
 
 void timeTest()
 {
-    Serial.print("Now - Last = ");
-    Serial.println(now() - lastTime);
-    Serial.print("Seconds Since Last = ");
-    Serial.println(numberOfSeconds(now() - lastTime));
-    Serial.print("Minutes Since Last = ");
-    Serial.println(numberOfMinutes(now() - lastTime));
-    Serial.print("Hours Since Last = ");
-    Serial.println(numberOfHours(now() - lastTime));
-    Serial.print("Now = ");
+    MH.serPtr()->print("Now - Last = ");
+    MH.serPtr()->println(now() - lastTime);
+    MH.serPtr()->print("Seconds Since Last = ");
+    MH.serPtr()->println(numberOfSeconds(now() - lastTime));
+    MH.serPtr()->print("Minutes Since Last = ");
+    MH.serPtr()->println(numberOfMinutes(now() - lastTime));
+    MH.serPtr()->print("Hours Since Last = ");
+    MH.serPtr()->println(numberOfHours(now() - lastTime));
+    MH.serPtr()->print("Now = ");
     digitalClockDisplayNow();
-    Serial.print("In 1.5 Hours = ");
+    MH.serPtr()->print("In 1.5 Hours = ");
     digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
 }
 
 void setValveRunTime()
 {
-    pepperZone.openValve();
-    pepperZone.setTimeToTurnOffValve(now() + (SECS_PER_MIN * valveRunTime));
-    Serial.print("Valve will turn off at ");
-    digitalClockDisplay(pepperZone.timeToTurnOffValve());
-    valveRunTime = 0;
+    int zone = valveRunTime[0] - '0';
+    char buffer[15];
+    strcpy(buffer, &valveRunTime[2]);
+    int runTime = atoi(buffer);
+    Zone* tempZone = GM.valveRunTime(zone-1, runTime);
+    MH.serPtr()->print(tempZone->name());
+    MH.serPtr()->print(" valve will turn off at ");
+    digitalClockDisplay(tempZone->timeToTurnOffValve());
+    memset(valveRunTime, '\0', sizeof(valveRunTime));
 }
