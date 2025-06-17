@@ -42,7 +42,7 @@ void GardenManager::openAllValves()
 Zone* GardenManager::valveRunTime(int zone, int runTime)
 {
     m_zones[zone]->openValve();
-    m_zones[zone]->setTimeToTurnOffValve(now() + (SECS_PER_MIN * runTime));
+    m_zones[zone]->timeToTurnOffValve(now() + (SECS_PER_MIN * (time_t)runTime));
     return m_zones[zone];
 }
 
@@ -55,7 +55,7 @@ void GardenManager::maintain()
             {
                 MH.serPtr()->print("Closing ");
                 MH.serPtr()->print(m_zones[i]->name());
-                MH.serPtr()->print(" valve");
+                MH.serPtr()->println(" valve");
                 m_zones[i]->closeValve();
             }
         }
@@ -76,12 +76,11 @@ Zone::Zone(const char zoneName[20], uint8_t sen_pin, uint8_t val_pin1, uint8_t v
     pinMode(m_valvePin2, OUTPUT);
     digitalWrite(m_valvePin1, LOW);
     digitalWrite(m_valvePin2, LOW);
-}
 
-uint16_t Zone::moisture()
-{
-    uint16_t rc = analogRead(m_moistureSensorPin);
-    return rc;
+    for(int i = 0; i < 7; i++)
+    {
+        m_schedDOWday[i] = false;
+    }
 }
 
 void Zone::openValve()
@@ -103,7 +102,18 @@ void Zone::printStatus(Stream* output)
     output->print("Moisture Level: ");
     output->println(moisture());
     output->print("Valve is ");
-    digitalRead(m_valvePin1) ? output->println("ON") : output->println("OFF");
+    digitalRead(m_valvePin1) ? output->println("OPEN") : output->println("CLOSED");
+    if (m_valveTimerRunning)
+    {
+        int hourTime = ((timeToTurnOffValve() - now()) / SECS_PER_HOUR);
+        int minTime = (((timeToTurnOffValve() - now()) % SECS_PER_HOUR) / SECS_PER_MIN);
+        int secTime = ((timeToTurnOffValve() - now()) % SECS_PER_MIN);
+        output->print("Valve will close in ");
+        if (hourTime > 0) {output->print(hourTime); output->print("h");}
+        if (minTime > 0) {output->print(minTime); output->print("m");}
+        if (secTime > 0) {output->print(secTime); output->print("s");}
+        output->println();
+    }
 }
 
 void Zone::handleSchedule()
@@ -136,20 +146,29 @@ void Zone::handleSchedule()
 
 void Zone::handleSchedDOW()
 {
-
+    if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    if (m_schedDOWday[((int)dayOfWeek(now())-1)] == 0) return;
+    if (m_schedDOWhour == hour() && m_schedDOWmin == minute() && !m_valveTimerRunning)
+    {
+        openValve();
+        timeToTurnOffValve(now() + m_scheduledRuntime);
+        m_lastWaterTime = now();
+    }
 }
 
 void Zone::handleSchedInterval()
 {
-
+    if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
 }
 
 void Zone::handleSchedSensor()
 {
     if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    openValve();
+    timeToTurnOffValve(now() + m_scheduledRuntime);
 }
 
-void Zone::setTimeToTurnOffValve(time_t newTime)
+void Zone::timeToTurnOffValve(time_t newTime)
 {
     m_timeToTurnOffValve = newTime; 
     m_valveTimerRunning = true;

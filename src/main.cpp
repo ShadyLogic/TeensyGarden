@@ -5,19 +5,19 @@
 
 #include <GardenManager.h>
 
-#define PEPPER_SOLENOID_PIN_1       2
-#define PEPPER_SOLENOID_PIN_2       3
-#define TOMATO_SOLENOID_PIN_1       4
-#define TOMATO_SOLENOID_PIN_2       5
+#define ZUCCHINI_SOLENOID_PIN_1     2
+#define ZUCCHINI_SOLENOID_PIN_2     3
+#define PEPPER_SOLENOID_PIN_1       4
+#define PEPPER_SOLENOID_PIN_2       5
 #define CUCUMBER_SOLENOID_PIN_1     6
 #define CUCUMBER_SOLENOID_PIN_2     7
 #define MELON_SOLENOID_PIN_1        8
 #define MELON_SOLENOID_PIN_2        9
 
-#define PEPPER_SENSOR_PIN       20
-#define TOMATO_SENSOR_PIN       21
-#define CUCUMBER_SENSOR_PIN     22
-#define MELON_SENSOR_PIN        23
+#define ZUCCHINI_SENSOR_PIN         20
+#define PEPPER_SENSOR_PIN           21
+#define CUCUMBER_SENSOR_PIN         22
+#define MELON_SENSOR_PIN            23
 
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
@@ -28,34 +28,35 @@ Maltbie_Helper MH;
 Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
 
 GardenManager GM;
-Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN_1, PEPPER_SOLENOID_PIN_2);
-Zone tomatoZone     ("Tomatoes",    TOMATO_SENSOR_PIN,      TOMATO_SOLENOID_PIN_1, TOMATO_SOLENOID_PIN_2);
-Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN_1, CUCUMBER_SOLENOID_PIN_2);
-Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN_1, MELON_SOLENOID_PIN_2);
+Zone zucchiniZone   ("Zucchini",    ZUCCHINI_SENSOR_PIN,    ZUCCHINI_SOLENOID_PIN_1,    ZUCCHINI_SOLENOID_PIN_2);
+Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN_1,      PEPPER_SOLENOID_PIN_2);
+Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN_1,    CUCUMBER_SOLENOID_PIN_2);
+Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN_1,       MELON_SOLENOID_PIN_2);
 
 bool debugPrint = false;
 
 Timer_ms    sensorTimer;
 uint8_t     menuValve = 0;
 
-time_t getTeensy3Time();
-void print12Hour(int digits);
-void digitalClockDisplay(time_t time);
-void digitalClockDisplayNow(void) {digitalClockDisplay(now());}
-void printDigits(int digits);
-void printGardenStatus(void);
-void setRTC(void);
-void toggleValve(void);
-void clickyValveTest(void);
-void closeAllValves(void);
-void openAllValves(void);
-void setValveRunTime(void);
-char valveRunTime[15] = "0-0";
+time_t  getTeensy3Time();
+void    print12Hour(int digits);
+void    digitalClockDisplay(time_t time);
+void    digitalClockDisplayNow(void) {digitalClockDisplay(now());}
+void    printDigits(int digits);
+void    printGardenStatus(void);
+void    setRTC(void);
+void    toggleValve(void);
+void    clickyValveTest(void);
+void    closeAllValves(void);
+void    openAllValves(void);
+void    setValveRunTime(void);
+char    valveRunTime[15] = "0-0";
 
-void timeTest(void);
-time_t lastTime;
+void    timeTest(void);
+time_t  lastTime;
 
-bool funkyLights = false;
+bool    funkyLights = false;
+bool    PWMtest     = false;
 
 
 void setup() 
@@ -63,10 +64,6 @@ void setup()
     setSyncProvider(getTeensy3Time);
 	Serial.begin(115200);
 	delay(100);
-
-    // setTime(16,50,0,1,5,2025);
-    // Teensy3Clock.set(now());
-    // setTime(now());
 
 	MM.setupBLE();
 	MM.setupEEPROM();
@@ -85,9 +82,10 @@ void setup()
     MainMenu.addOption('E', "Time Test", timeTest);
     MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", valveRunTime, setValveRunTime);
     MainMenu.addOption('I', "Funky Lights", &funkyLights);
+    MainMenu.addOption('J', "PWM Test", &PWMtest);
 
+    GM.addZone(&zucchiniZone);
     GM.addZone(&pepperZone);
-    GM.addZone(&tomatoZone);
     GM.addZone(&cucumberZone);
     GM.addZone(&melonZone);
 
@@ -117,7 +115,7 @@ void loop(){
     // if (!sensorTimer.isActive())
     // {
     //     MH.serPtr()->print("Moisture Level: ");
-    //     MH.serPtr()->println(pepperZone.moisture());
+    //     MH.serPtr()->println(zucchiniZone.moisture());
     //     sensorTimer.Start(1000);
     // }
     if (funkyLights)
@@ -135,6 +133,15 @@ void loop(){
             if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
         }
     }
+
+    if (PWMtest)
+    {
+        static int pwmSec = 0;
+        analogWrite(2, pwmSec % 255);
+        pwmSec++;
+        pinMode(2, OUTPUT);
+    }
+
     delay(10);
 }
 
@@ -213,15 +220,15 @@ void toggleValve()
     switch (menuValve)
     {
         case 1:
-            pepperZone.valveIsOn() ? pepperZone.closeValve() : pepperZone.openValve();
-            MH.serPtr()->print("Pepper Zone Valve is now ");
-            pepperZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            zucchiniZone.valveIsOn() ? zucchiniZone.closeValve() : zucchiniZone.openValve();
+            MH.serPtr()->print("Zucchini Zone Valve is now ");
+            zucchiniZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         case 2:
-            tomatoZone.valveIsOn() ? tomatoZone.closeValve() : tomatoZone.openValve();
-            MH.serPtr()->print("Tomato Zone Valve is now ");
-            tomatoZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            pepperZone.valveIsOn() ? pepperZone.closeValve() : pepperZone.openValve();
+            MH.serPtr()->print("Pepper Zone Valve is now ");
+            pepperZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         case 3:
@@ -244,13 +251,13 @@ void toggleValve()
 
 void clickyValveTest()
 {
+    zucchiniZone.openValve();
+    delay(500);
+    zucchiniZone.closeValve();
+    delay(500);
     pepperZone.openValve();
     delay(500);
     pepperZone.closeValve();
-    delay(500);
-    tomatoZone.openValve();
-    delay(500);
-    tomatoZone.closeValve();
     delay(500);
     cucumberZone.openValve();
     delay(500);
@@ -290,6 +297,11 @@ void timeTest()
 
 void setValveRunTime()
 {
+    if (valveRunTime[1] != '-' || valveRunTime[2] == '\0')
+    {
+        MH.serPtr()->println("Format must be \"Valve#-Time\"(including the dash)");
+        return;
+    }
     int zone = valveRunTime[0] - '0';
     char buffer[15];
     strcpy(buffer, &valveRunTime[2]);

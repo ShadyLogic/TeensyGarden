@@ -24,32 +24,49 @@ class Zone {
 public:
     Zone(){}
     Zone(const char[20], uint8_t, uint8_t, uint8_t = 200);
-    uint16_t    moisture(void);
-    const char* name(void) {return m_zoneName;}
-    void        openValve(void);
-    void        closeValve(void);
-    bool        valveIsOn(void)         {return digitalRead(m_valvePin1);}
-    void        logLastWaterTime(void)  {m_lastWaterTime = now();}
-    void        handleSchedule(void);
-    void        printStatus(Stream*);
-    void        setTimeToTurnOffValve(time_t);
-    time_t      timeToTurnOffValve()    {return m_timeToTurnOffValve;}
-    void        startValveTimer()       {m_valveTimerRunning = true;}
-    bool        valveTimerExpired()     {return (now() > m_timeToTurnOffValve);}
-    bool        valveTimerRunning()     {return m_valveTimerRunning;}
+
+    const char*     name(void)                          {return m_zoneName;}
+    void            name(char* newName)                 {strcpy(m_zoneName, newName);}
+
+    ScheduleType    scheduleMode()                      {return m_schedType;}
+    void            scheduleMode(ScheduleType st)       {m_schedType = st;}
+
+    time_t          lastWaterTime(void)                 {return m_lastWaterTime;}
+    void            lastWaterTime(time_t newTime)       {m_lastWaterTime = newTime;}
+
+    time_t          timeToTurnOffValve()                {return m_timeToTurnOffValve;}
+    void            timeToTurnOffValve(time_t);
+
+    bool            valveTimerRunning()                 {return m_valveTimerRunning;}
+    bool            valveTimerExpired()                 {return (now() > m_timeToTurnOffValve);}
+    void            startValveTimer()                   {m_valveTimerRunning = true;}
+
+    bool            valveIsOn(void)                     {return digitalRead(m_valvePin1);}
+    void            openValve(void);
+    void            closeValve(void);
+
+    int             moisture(void)                      {return analogRead(m_moistureSensorPin);}
+
+    void            handleSchedule(void);
+    void            printStatus(Stream*);
 
 private:
     char            m_zoneName[20];
-    uint8_t         m_moistureSensorPin;
+    ScheduleType    m_schedType;
+    bool            m_schedDOWday[7];
+    uint8_t         m_schedDOWhour;
+    uint8_t         m_schedDOWmin;
+    time_t          m_nextWaterTime;
+    time_t          m_lastWaterTime;
+    time_t          m_timeToTurnOffValve;
+    time_t          m_minTimeBetweenWater;
+    time_t          m_scheduledRuntime;
+    bool            m_valveTimerRunning;
     uint8_t         m_valvePin1;
     uint8_t         m_valvePin2;
+    uint8_t         m_moistureSensorPin;
     uint16_t        m_wetThreshold;
     uint16_t        m_dryThreshold;
-    ScheduleType    m_schedType;
-    time_t          m_lastWaterTime;
-    time_t          m_minTimeBetweenWater;
-    time_t          m_timeToTurnOffValve;
-    bool            m_valveTimerRunning;
 
     void            handleSchedDOW(void);
     void            handleSchedInterval(void);
