@@ -74,15 +74,14 @@ void setup()
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
-    MainMenu.addOption('F', "Print Garden Status", printGardenStatus);
-    MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
-    MainMenu.addOption('V', "Clicky Valve Test", clickyValveTest);
-    MainMenu.addOption('+', "Open All Valves", openAllValves);
-    MainMenu.addOption('-', "Close All Vavles", closeAllValves);
-    MainMenu.addOption('E', "Time Test", timeTest);
+    MainMenu.addOption('E', "Clicky Valve Test", clickyValveTest);
+    MainMenu.addOption('F', "Time Test", timeTest);
     MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", valveRunTime, setValveRunTime);
     MainMenu.addOption('I', "Funky Lights", &funkyLights);
     MainMenu.addOption('J', "PWM Test", &PWMtest);
+    MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
+    MainMenu.addOption('+', "Open All Valves", openAllValves);
+    MainMenu.addOption('-', "Close All Vavles", closeAllValves);
 
     GM.addZone(&zucchiniZone);
     GM.addZone(&pepperZone);
