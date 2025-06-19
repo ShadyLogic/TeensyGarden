@@ -96,24 +96,55 @@ void Zone::closeValve()
     m_valveTimerRunning = false;
 }
 
+void Zone::timeToTurnOffValve(time_t newTime)
+{
+    m_timeToTurnOffValve = newTime; 
+    m_valveTimerRunning = true;
+}
+
 void Zone::printStatus(Stream* output)
 {
-    output->println(m_zoneName);
+    output->print(m_zoneName);
+    output->print(" - Mode: ");
+
+    switch (m_schedType)
+    {
+        case ScheduleType::NONE:
+            output->println("None");
+            break;
+
+        case ScheduleType::DOW:
+            output->println("DOW");
+            break;
+
+        case ScheduleType::INTERVAL:
+            output->println("Interval");
+            break;
+
+        case ScheduleType::SENSOR:
+            output->println("Sensor");
+            break;
+    }
+
+    output->print("Dry: ");
+    output->print(m_dryThreshold);
+    output->print(" | Wet: ");
+    output->println(m_wetThreshold);
     output->print("Moisture Level: ");
     output->println(moisture());
     output->print("Valve is ");
-    digitalRead(m_valvePin1) ? output->println("OPEN") : output->println("CLOSED");
+    digitalRead(m_valvePin1) ? output->print("OPEN") : output->print("CLOSED");
     if (m_valveTimerRunning)
     {
         int hourTime = ((timeToTurnOffValve() - now()) / SECS_PER_HOUR);
         int minTime = (((timeToTurnOffValve() - now()) % SECS_PER_HOUR) / SECS_PER_MIN);
         int secTime = ((timeToTurnOffValve() - now()) % SECS_PER_MIN);
-        output->print("Valve will close in ");
+        output->print(" for ");
         if (hourTime > 0) {output->print(hourTime); output->print("h");}
         if (minTime > 0) {output->print(minTime); output->print("m");}
         if (secTime > 0) {output->print(secTime); output->print("s");}
-        output->println();
     }
+    output->println();
 }
 
 void Zone::handleSchedule()
@@ -164,12 +195,8 @@ void Zone::handleSchedInterval()
 void Zone::handleSchedSensor()
 {
     if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    if (moisture() > m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + m_scheduledRuntime);
-}
-
-void Zone::timeToTurnOffValve(time_t newTime)
-{
-    m_timeToTurnOffValve = newTime; 
-    m_valveTimerRunning = true;
+    m_lastWaterTime = now();
 }

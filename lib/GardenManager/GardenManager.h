@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <Maltbie_Helper.h>
+#include <Menu_Config.h>
 #include <TimeLib.h>
 
 enum ScheduleType
@@ -46,6 +47,8 @@ public:
     void            closeValve(void);
 
     int             moisture(void)                      {return analogRead(m_moistureSensorPin);}
+    void            setDryThreshold(uint16_t value)     {m_dryThreshold = value;}
+    void            setWetThreshold(uint16_t value)     {m_wetThreshold = value;}
 
     void            handleSchedule(void);
     void            printStatus(Stream*);
@@ -84,9 +87,10 @@ public:
     Zone* valveRunTime(int, int);
     void maintain();
 
+    Zone*    m_zones[MAX_ZONES];
+
 private:
     uint8_t m_zonesIndex = 0;
-    Zone*    m_zones[MAX_ZONES];
 };
 
 

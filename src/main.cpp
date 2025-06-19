@@ -1,6 +1,8 @@
 #include <Maltbie_Menu.h>
 #include <Maltbie_Timer.h>
 
+#include <mcurses.h>
+
 #include <TimeLib.h>
 
 #include <GardenManager.h>
@@ -50,7 +52,10 @@ void    clickyValveTest(void);
 void    closeAllValves(void);
 void    openAllValves(void);
 void    setValveRunTime(void);
-char    valveRunTime[15] = "0-0";
+void    setDryThreshold(void);
+void    setWetThreshold(void);
+char    inputBuffer[15] = "0-0";
+
 
 void    timeTest(void);
 time_t  lastTime;
@@ -76,9 +81,11 @@ void setup()
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
     MainMenu.addOption('E', "Clicky Valve Test", clickyValveTest);
     MainMenu.addOption('F', "Time Test", timeTest);
-    MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", valveRunTime, setValveRunTime);
+    MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", inputBuffer, setValveRunTime);
     MainMenu.addOption('I', "Funky Lights", &funkyLights);
     MainMenu.addOption('J', "PWM Test", &PWMtest);
+    MainMenu.addOption('K', "Set Zone Dry Threshold (Valve#-Value)", inputBuffer, setDryThreshold);
+    MainMenu.addOption('L', "Set Zone Wet Threshold (Valve#-Value)", inputBuffer, setWetThreshold);
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
@@ -87,6 +94,15 @@ void setup()
     GM.addZone(&pepperZone);
     GM.addZone(&cucumberZone);
     GM.addZone(&melonZone);
+
+    GM.m_zones[0]->setDryThreshold(StoreEE.zoneAdryThreshold);
+    GM.m_zones[0]->setWetThreshold(StoreEE.zoneAwetThreshold);
+    GM.m_zones[1]->setDryThreshold(StoreEE.zoneBdryThreshold);
+    GM.m_zones[1]->setWetThreshold(StoreEE.zoneBwetThreshold);
+    GM.m_zones[2]->setDryThreshold(StoreEE.zoneCdryThreshold);
+    GM.m_zones[2]->setWetThreshold(StoreEE.zoneCwetThreshold);
+    GM.m_zones[3]->setDryThreshold(StoreEE.zoneDdryThreshold);
+    GM.m_zones[3]->setWetThreshold(StoreEE.zoneDwetThreshold);
 
     MM.printHelp(&Serial, true);
 
@@ -103,7 +119,7 @@ void setup()
 
     lastTime = now();
 
-    memset(valveRunTime, '\0', sizeof(valveRunTime));
+    memset(inputBuffer, '\0', sizeof(inputBuffer));
 }
 
 void loop(){
@@ -296,18 +312,140 @@ void timeTest()
 
 void setValveRunTime()
 {
-    if (valveRunTime[1] != '-' || valveRunTime[2] == '\0')
+    if (inputBuffer[1] != '-' || inputBuffer[2] == '\0')
     {
         MH.serPtr()->println("Format must be \"Valve#-Time\"(including the dash)");
         return;
     }
-    int zone = valveRunTime[0] - '0';
+    int zone = inputBuffer[0] - '0';
     char buffer[15];
-    strcpy(buffer, &valveRunTime[2]);
+    strcpy(buffer, &inputBuffer[2]);
     int runTime = atoi(buffer);
     Zone* tempZone = GM.valveRunTime(zone-1, runTime);
     MH.serPtr()->print(tempZone->name());
     MH.serPtr()->print(" valve will turn off at ");
     digitalClockDisplay(tempZone->timeToTurnOffValve());
-    memset(valveRunTime, '\0', sizeof(valveRunTime));
+    memset(inputBuffer, '\0', sizeof(inputBuffer));
+}
+
+void setDryThreshold()
+{
+    int zone = inputBuffer[0] - '0' - 1;
+    if (zone < 0 || zone > 3)
+    {
+        MH.serPtr()->print("Invalid Zone: ");
+        MH.serPtr()->println(zone + 1);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    if (inputBuffer[1] != '-' && inputBuffer[1] != '\0')
+    {
+        MH.serPtr()->println("Format must be \"Valve#-Value\"(including the dash)");
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    if (inputBuffer[1] == '\0')
+    {
+        int moistureRead = GM.m_zones[zone]->moisture();
+        GM.m_zones[zone]->setDryThreshold(moistureRead);
+        MH.serPtr()->print(GM.m_zones[zone]->name());
+        MH.serPtr()->print(" - New Dry Threshold: ");
+        MH.serPtr()->println(moistureRead);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    char buffer[15];
+    strcpy(buffer, &inputBuffer[2]);
+    int newThresh = atoi(buffer);
+    GM.m_zones[zone]->setDryThreshold(newThresh);
+    MH.serPtr()->print(GM.m_zones[zone]->name());
+    MH.serPtr()->print(" - New Dry Threshold: ");
+    MH.serPtr()->println(newThresh);
+    memset(inputBuffer, '\0', sizeof(inputBuffer));
+
+    switch (zone)
+    {
+        case 0:
+            StoreEE.zoneAdryThreshold = newThresh;
+            break;
+        
+        case 1:
+            StoreEE.zoneBdryThreshold = newThresh;
+            break;
+
+        case 2:
+            StoreEE.zoneCdryThreshold = newThresh;
+            break;
+        case 3:
+
+            StoreEE.zoneDdryThreshold = newThresh;
+            break;
+
+        default:
+            break;
+    }
+}
+
+void setWetThreshold()
+{
+    int zone = inputBuffer[0] - '0' - 1;
+    if (zone < 0 || zone > 3)
+    {
+        MH.serPtr()->print("Invalid Zone: ");
+        MH.serPtr()->println(zone + 1);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    if (inputBuffer[1] != '-' && inputBuffer[1] != '\0')
+    {
+        MH.serPtr()->println("Format must be \"Valve#-Value\"(including the dash)");
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    if (inputBuffer[1] == '\0')
+    {
+        int moistureRead = GM.m_zones[zone]->moisture();
+        GM.m_zones[zone]->setWetThreshold(moistureRead);
+        MH.serPtr()->print(GM.m_zones[zone]->name());
+        MH.serPtr()->print(" - New Wet Threshold: ");
+        MH.serPtr()->println(moistureRead);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+        return;
+    }
+
+    char buffer[15];
+    strcpy(buffer, &inputBuffer[2]);
+    int newThresh = atoi(buffer);
+    GM.m_zones[zone]->setWetThreshold(newThresh);
+    MH.serPtr()->print(GM.m_zones[zone]->name());
+    MH.serPtr()->print(" - New Wet Threshold: ");
+    MH.serPtr()->println(newThresh);
+    memset(inputBuffer, '\0', sizeof(inputBuffer));
+
+    switch (zone)
+    {
+        case 0:
+            StoreEE.zoneAwetThreshold = newThresh;
+            break;
+        
+        case 1:
+            StoreEE.zoneBwetThreshold = newThresh;
+            break;
+
+        case 2:
+            StoreEE.zoneCwetThreshold = newThresh;
+            break;
+        case 3:
+
+            StoreEE.zoneDwetThreshold = newThresh;
+            break;
+
+        default:
+            break;
+    }
 }
