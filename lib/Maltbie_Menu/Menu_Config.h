@@ -19,7 +19,7 @@
 //////////   SOFTWARE CODE SWITCHES   //////////
 #define USE_WATCHDOG        true
 #define USE_ETHERNET        true
-#define ENABLE_BLE          false
+#define ENABLE_BLE          true
 #define DO_DEBUG_PRINTS     false
 
 //////////   ARRAY SIZE DEFINITION   //////////

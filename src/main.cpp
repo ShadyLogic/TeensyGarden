@@ -1,7 +1,7 @@
 #include <Maltbie_Menu.h>
 #include <Maltbie_Timer.h>
 
-#include <mcurses.h>
+// #include <mcurses.h>
 
 #include <TimeLib.h>
 
@@ -120,6 +120,8 @@ void setup()
     lastTime = now();
 
     memset(inputBuffer, '\0', sizeof(inputBuffer));
+
+    GM.m_zones[0]->setScheduleDOW(now()+SECS_PER_MIN);
 }
 
 void loop(){
@@ -176,12 +178,12 @@ void digitalClockDisplay(time_t time){
         MH.serPtr()->print("AM,");
     }
     MH.serPtr()->print(" ");
-    MH.serPtr()->print(month());
+    MH.serPtr()->print(month(time));
     MH.serPtr()->print("/");
-    MH.serPtr()->print(day());
+    MH.serPtr()->print(day(time));
     MH.serPtr()->print("/");
-    MH.serPtr()->print(year()); 
-    MH.serPtr()->println("\n"); 
+    MH.serPtr()->print(year(time)); 
+    MH.serPtr()->println(); 
 }
 
 time_t getTeensy3Time()
@@ -308,6 +310,13 @@ void timeTest()
     digitalClockDisplayNow();
     MH.serPtr()->print("In 1.5 Hours = ");
     digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
+    MH.serPtr()->print("Time @ \'0\' = ");
+    digitalClockDisplay((time_t)0);
+    MH.serPtr()->print("Previous Midnight = ");
+    digitalClockDisplay(previousMidnight(now()));
+    MH.serPtr()->print("8PM Today = ");
+    digitalClockDisplay(previousMidnight(now()) + (SECS_PER_HOUR * 20));
+    MH.serPtr()->println("This text is \033[1;32mGREEN\033[0m");
 }
 
 void setValveRunTime()
@@ -346,6 +355,7 @@ void setDryThreshold()
         return;
     }
 
+    int newThresh;
     if (inputBuffer[1] == '\0')
     {
         int moistureRead = GM.m_zones[zone]->moisture();
@@ -354,17 +364,19 @@ void setDryThreshold()
         MH.serPtr()->print(" - New Dry Threshold: ");
         MH.serPtr()->println(moistureRead);
         memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
+        newThresh = moistureRead;
     }
-
-    char buffer[15];
-    strcpy(buffer, &inputBuffer[2]);
-    int newThresh = atoi(buffer);
-    GM.m_zones[zone]->setDryThreshold(newThresh);
-    MH.serPtr()->print(GM.m_zones[zone]->name());
-    MH.serPtr()->print(" - New Dry Threshold: ");
-    MH.serPtr()->println(newThresh);
-    memset(inputBuffer, '\0', sizeof(inputBuffer));
+    else
+    {
+        char buffer[15];
+        strcpy(buffer, &inputBuffer[2]);
+        newThresh = atoi(buffer);
+        GM.m_zones[zone]->setDryThreshold(newThresh);
+        MH.serPtr()->print(GM.m_zones[zone]->name());
+        MH.serPtr()->print(" - New Dry Threshold: ");
+        MH.serPtr()->println(newThresh);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+    }
 
     switch (zone)
     {
@@ -407,6 +419,7 @@ void setWetThreshold()
         return;
     }
 
+    int newThresh;
     if (inputBuffer[1] == '\0')
     {
         int moistureRead = GM.m_zones[zone]->moisture();
@@ -415,17 +428,19 @@ void setWetThreshold()
         MH.serPtr()->print(" - New Wet Threshold: ");
         MH.serPtr()->println(moistureRead);
         memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
+        newThresh = moistureRead;
     }
-
-    char buffer[15];
-    strcpy(buffer, &inputBuffer[2]);
-    int newThresh = atoi(buffer);
-    GM.m_zones[zone]->setWetThreshold(newThresh);
-    MH.serPtr()->print(GM.m_zones[zone]->name());
-    MH.serPtr()->print(" - New Wet Threshold: ");
-    MH.serPtr()->println(newThresh);
-    memset(inputBuffer, '\0', sizeof(inputBuffer));
+    else
+    {
+        char buffer[15];
+        strcpy(buffer, &inputBuffer[2]);
+        newThresh = atoi(buffer);
+        GM.m_zones[zone]->setWetThreshold(newThresh);
+        MH.serPtr()->print(GM.m_zones[zone]->name());
+        MH.serPtr()->print(" - New Wet Threshold: ");
+        MH.serPtr()->println(newThresh);
+        memset(inputBuffer, '\0', sizeof(inputBuffer));
+    }
 
     switch (zone)
     {

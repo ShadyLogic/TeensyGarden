@@ -59,6 +59,7 @@ void GardenManager::maintain()
                 m_zones[i]->closeValve();
             }
         }
+        m_zones[i]->handleSchedule();
     }
 }
 
@@ -133,7 +134,7 @@ void Zone::printStatus(Stream* output)
     output->print("Moisture Level: ");
     output->println(moisture());
     output->print("Valve is ");
-    digitalRead(m_valvePin1) ? output->print("OPEN") : output->print("CLOSED");
+    digitalRead(m_valvePin1) ? output->print("\033[1;32mOPEN\033[0m") : output->print("\033[1;31mCLOSED\033[0m");
     if (m_valveTimerRunning)
     {
         int hourTime = ((timeToTurnOffValve() - now()) / SECS_PER_HOUR);
@@ -181,6 +182,8 @@ void Zone::handleSchedDOW()
     if (m_schedDOWday[((int)dayOfWeek(now())-1)] == 0) return;
     if (m_schedDOWhour == hour() && m_schedDOWmin == minute() && !m_valveTimerRunning)
     {
+        MH.serPtr()->print(name());
+        MH.serPtr()->println(" running scheduled watering");
         openValve();
         timeToTurnOffValve(now() + m_scheduledRuntime);
         m_lastWaterTime = now();
@@ -199,4 +202,58 @@ void Zone::handleSchedSensor()
     openValve();
     timeToTurnOffValve(now() + m_scheduledRuntime);
     m_lastWaterTime = now();
+}
+
+void Zone::setScheduleDOW(time_t time)
+{
+    m_schedDOWday[(int)dayOfWeek(time)-1] = true;
+    m_schedDOWhour  = hour(time);
+    m_schedDOWmin   = minute(time);
+    m_schedType     = ScheduleType::DOW;
+    m_scheduledRuntime = SECS_PER_HOUR/4;
+
+    printScheduleDOW();
+}
+
+void Zone::printScheduleDOW()
+{
+    MH.serPtr()->println("Scheduled Run Times:");
+    for (int i = 0; i < 7; i++)
+    {
+        if (m_schedDOWday[i])
+        {
+            MH.serPtr()->print("- ");
+            MH.serPtr()->println(numberToDay(i));
+        }
+    }
+    MH.serPtr()->print("@ ");
+    MH.serPtr()->print(m_schedDOWhour);
+    MH.serPtr()->print(":");
+    MH.serPtr()->print(m_schedDOWmin);
+    MH.serPtr()->print(" for ");
+    MH.serPtr()->print(m_scheduledRuntime / SECS_PER_MIN);
+    MH.serPtr()->println(" min");
+}
+
+String numberToDay(int number)
+{
+    switch (number)
+    {
+        case 0:
+            return "Sunday";
+        case 1:
+            return "Monday";
+        case 2:
+            return "Tuesday";
+        case 3:
+            return "Wednesday";
+        case 4:
+            return "Thursday";
+        case 5:
+            return "Friday";
+        case 6:
+            return "Saturday";
+        default:
+            return "ERROR";
+    }
 }

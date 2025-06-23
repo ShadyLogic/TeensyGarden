@@ -20,6 +20,9 @@ enum ScheduleType
 };
 
 
+String numberToDay(int);
+
+
 
 class Zone {
 public:
@@ -52,6 +55,9 @@ public:
 
     void            handleSchedule(void);
     void            printStatus(Stream*);
+
+    void            setScheduleDOW(time_t);
+    void            printScheduleDOW();
 
 private:
     char            m_zoneName[20];
