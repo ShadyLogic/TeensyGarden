@@ -11,7 +11,7 @@
 #include <Menu_Config.h>
 #include <TimeLib.h>
 
-enum ScheduleType
+enum ScheduleMode
 {
     NONE,
     DOW,
@@ -27,16 +27,19 @@ String numberToDay(int);
 class Zone {
 public:
     Zone(){}
-    Zone(const char[20], uint8_t, uint8_t, uint8_t = 200);
+    Zone(uint8_t, uint8_t, uint8_t = 200);
 
     const char*     name(void)                          {return m_zoneName;}
     void            name(char* newName)                 {strcpy(m_zoneName, newName);}
 
-    ScheduleType    scheduleMode()                      {return m_schedType;}
-    void            scheduleMode(ScheduleType st)       {m_schedType = st;}
+    ScheduleMode    scheduleMode()                      {return m_schedType;}
+    void            scheduleMode(ScheduleMode st)       {m_schedType = st;}
 
     time_t          lastWaterTime(void)                 {return m_lastWaterTime;}
     void            lastWaterTime(time_t newTime)       {m_lastWaterTime = newTime;}
+
+    time_t          timeBetweenWatering(void)           {return m_timeBetweenWatering;}
+    void            timeBetweenWatering(time_t newTBW)  {m_timeBetweenWatering = newTBW;}
 
     time_t          timeToTurnOffValve()                {return m_timeToTurnOffValve;}
     void            timeToTurnOffValve(time_t);
@@ -50,8 +53,13 @@ public:
     void            closeValve(void);
 
     int             moisture(void)                      {return analogRead(m_moistureSensorPin);}
-    void            setDryThreshold(uint16_t value)     {m_dryThreshold = value;}
-    void            setWetThreshold(uint16_t value)     {m_wetThreshold = value;}
+    uint16_t        dryThreshold(void)                  {return m_dryThreshold;}
+    void            dryThreshold(uint16_t value)        {m_dryThreshold = value;}
+    uint16_t        wetThreshold(void)                  {return m_wetThreshold;}
+    void            wetThreshold(uint16_t value)        {m_wetThreshold = value;}
+
+    uint8_t         durationToWater(void)               {return m_durationToWater;}
+    void            durationToWater(uint8_t newDur)     {m_durationToWater = newDur;}
 
     void            handleSchedule(void);
     void            printStatus(Stream*);
@@ -59,17 +67,23 @@ public:
     void            setScheduleDOW(time_t);
     void            printScheduleDOW();
 
+    uint8_t         schedDOWhour(void)                  {return m_schedDOWhour;}
+    void            schedDOWhour(uint8_t newHour)       {m_schedDOWhour = newHour;}
+    uint8_t         schedDOWmin(void)                   {return m_schedDOWmin;}
+    void            schedDOWmin(uint8_t newMin)         {m_schedDOWhour = newMin;}
+    bool*           schedDOWday(void)                   {return m_schedDOWday;}
+
 private:
     char            m_zoneName[20];
-    ScheduleType    m_schedType;
+    ScheduleMode    m_schedType;
     bool            m_schedDOWday[7];
     uint8_t         m_schedDOWhour;
     uint8_t         m_schedDOWmin;
     time_t          m_nextWaterTime;
     time_t          m_lastWaterTime;
     time_t          m_timeToTurnOffValve;
-    time_t          m_minTimeBetweenWater;
-    time_t          m_scheduledRuntime;
+    time_t          m_timeBetweenWatering;
+    uint8_t         m_durationToWater;
     bool            m_valveTimerRunning;
     uint8_t         m_valvePin1;
     uint8_t         m_valvePin2;

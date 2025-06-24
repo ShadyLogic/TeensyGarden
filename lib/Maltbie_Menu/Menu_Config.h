@@ -41,14 +41,18 @@ struct EEPROM_Struct
 // Application Specific Config Here //                                                      //STRUCT DEFINITION//
 //////////////////////////////////////////////////////
 //                                                  //
-    uint16_t    zoneAwetThreshold;
-    uint16_t    zoneAdryThreshold;
-    uint16_t    zoneBwetThreshold;
-    uint16_t    zoneBdryThreshold;
-    uint16_t    zoneCwetThreshold;
-    uint16_t    zoneCdryThreshold;
-    uint16_t    zoneDwetThreshold;
-    uint16_t    zoneDdryThreshold;
+    char        zone1name[20];
+    uint16_t    zone1wetThreshold;
+    uint16_t    zone1dryThreshold;
+    char        zone2name[20];
+    uint16_t    zone2wetThreshold;
+    uint16_t    zone2dryThreshold;
+    char        zone3name[20];
+    uint16_t    zone3wetThreshold;
+    uint16_t    zone3dryThreshold;
+    char        zone4name[20];
+    uint16_t    zone4wetThreshold;
+    uint16_t    zone4dryThreshold;
     
 //                                                  //
 //////////////////////////////////////////////////////
@@ -63,14 +67,18 @@ const EEPROM_Struct STOREEE_DEFAULTS =
 // Application Default Config Here //                                                      //STRUCT DEFINITION//
 //////////////////////////////////////////////////////
 //                                                  //
-    500,                    // zoneAwetThreshold
-    100,                      // zoneAdryThreshold
-    500,                    // zoneBwetThreshold
-    100,                      // zoneBdryThreshold
-    500,                    // zoneCwetThreshold
-    100,                      // zoneCdryThreshold
-    500,                    // zoneDwetThreshold
-    100,                      // zoneDdryThreshold
+    "Zone 1",               // zone1name
+    500,                    // zone1wetThreshold
+    100,                    // zone1dryThreshold
+    "Zone 2",               // zone2name
+    500,                    // zone2wetThreshold
+    100,                    // zone2dryThreshold
+    "Zone 3",               // zone3name
+    500,                    // zone3wetThreshold
+    100,                    // zone3dryThreshold
+    "Zone 4",               // zone4name
+    500,                    // zone4wetThreshold
+    100,                    // zone4dryThreshold
 //                                                  //
 //////////////////////////////////////////////////////
     EEPROM_END_VER_SIG,

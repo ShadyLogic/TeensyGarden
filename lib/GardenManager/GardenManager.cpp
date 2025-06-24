@@ -65,9 +65,8 @@ void GardenManager::maintain()
 
 // ********   Z O N E   M E T H O D S   ********
 
-Zone::Zone(const char zoneName[20], uint8_t sen_pin, uint8_t val_pin1, uint8_t val_pin2)
+Zone::Zone(uint8_t sen_pin, uint8_t val_pin1, uint8_t val_pin2)
 {
-    strcpy(m_zoneName, zoneName);
     m_moistureSensorPin = sen_pin;
     m_valvePin1 = val_pin1;
     m_valvePin2 = val_pin2;
@@ -110,19 +109,19 @@ void Zone::printStatus(Stream* output)
 
     switch (m_schedType)
     {
-        case ScheduleType::NONE:
+        case ScheduleMode::NONE:
             output->println("None");
             break;
 
-        case ScheduleType::DOW:
+        case ScheduleMode::DOW:
             output->println("DOW");
             break;
 
-        case ScheduleType::INTERVAL:
+        case ScheduleMode::INTERVAL:
             output->println("Interval");
             break;
 
-        case ScheduleType::SENSOR:
+        case ScheduleMode::SENSOR:
             output->println("Sensor");
             break;
     }
@@ -178,29 +177,29 @@ void Zone::handleSchedule()
 
 void Zone::handleSchedDOW()
 {
-    if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
     if (m_schedDOWday[((int)dayOfWeek(now())-1)] == 0) return;
     if (m_schedDOWhour == hour() && m_schedDOWmin == minute() && !m_valveTimerRunning)
     {
         MH.serPtr()->print(name());
         MH.serPtr()->println(" running scheduled watering");
         openValve();
-        timeToTurnOffValve(now() + m_scheduledRuntime);
+        timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
         m_lastWaterTime = now();
     }
 }
 
 void Zone::handleSchedInterval()
 {
-    if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
 }
 
 void Zone::handleSchedSensor()
 {
-    if (now() < m_lastWaterTime + m_minTimeBetweenWater) return;
+    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
     if (moisture() > m_dryThreshold) return;
     openValve();
-    timeToTurnOffValve(now() + m_scheduledRuntime);
+    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
     m_lastWaterTime = now();
 }
 
@@ -209,8 +208,8 @@ void Zone::setScheduleDOW(time_t time)
     m_schedDOWday[(int)dayOfWeek(time)-1] = true;
     m_schedDOWhour  = hour(time);
     m_schedDOWmin   = minute(time);
-    m_schedType     = ScheduleType::DOW;
-    m_scheduledRuntime = SECS_PER_HOUR/4;
+    m_schedType     = ScheduleMode::DOW;
+    m_durationToWater = 15;
 
     printScheduleDOW();
 }
@@ -229,9 +228,10 @@ void Zone::printScheduleDOW()
     MH.serPtr()->print("@ ");
     MH.serPtr()->print(m_schedDOWhour);
     MH.serPtr()->print(":");
+    if (m_schedDOWmin < 10) MH.serPtr()->print('0');
     MH.serPtr()->print(m_schedDOWmin);
     MH.serPtr()->print(" for ");
-    MH.serPtr()->print(m_scheduledRuntime / SECS_PER_MIN);
+    MH.serPtr()->print(m_durationToWater);
     MH.serPtr()->println(" min");
 }
 

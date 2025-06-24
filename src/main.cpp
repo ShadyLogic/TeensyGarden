@@ -7,33 +7,53 @@
 
 #include <GardenManager.h>
 
-#define ZUCCHINI_SOLENOID_PIN_1     2
-#define ZUCCHINI_SOLENOID_PIN_2     3
-#define PEPPER_SOLENOID_PIN_1       4
-#define PEPPER_SOLENOID_PIN_2       5
-#define CUCUMBER_SOLENOID_PIN_1     6
-#define CUCUMBER_SOLENOID_PIN_2     7
-#define MELON_SOLENOID_PIN_1        8
-#define MELON_SOLENOID_PIN_2        9
+#define ZONE1_SOLENOID_PIN_1    2
+#define ZONE1_SOLENOID_PIN_2    3
+#define ZONE2_SOLENOID_PIN_1    4
+#define ZONE2_SOLENOID_PIN_2    5
+#define ZONE3_SOLENOID_PIN_1    6
+#define ZONE3_SOLENOID_PIN_2    7
+#define ZONE4_SOLENOID_PIN_1    8
+#define ZONE4_SOLENOID_PIN_2    9
 
-#define ZUCCHINI_SENSOR_PIN         20
-#define PEPPER_SENSOR_PIN           21
-#define CUCUMBER_SENSOR_PIN         22
-#define MELON_SENSOR_PIN            23
+#define ZONE1_SENSOR_PIN        20
+#define ZONE2_SENSOR_PIN        21
+#define ZONE3_SENSOR_PIN        22
+#define ZONE4_SENSOR_PIN        23
 
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
 char currentTime[20] = "10:00 05/15/2025";
 
-MenuManager MM;
 Maltbie_Helper MH;
+MenuManager MM;
 Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
 
+MenuManager SchedMan;
+Menu SchedMenu("**** Schedule Manager ****");
+
+struct ZoneSettings
+{
+    char            name[20];
+    ScheduleMode    schedMode;
+    time_t          timeBetweenWatering;
+    uint16_t        dryThresh;
+    uint16_t        wetThresh;
+    uint8_t         durationToWater;
+    uint8_t         scheduleHour;
+    uint8_t         scheduleMin;
+    bool            scheduleDOWday[7];
+};
+ZoneSettings SchedMenuSettings;
+
+bool exitSchedMenu = false;
+uint8_t currentZone = 1;
+
 GardenManager GM;
-Zone zucchiniZone   ("Zucchini",    ZUCCHINI_SENSOR_PIN,    ZUCCHINI_SOLENOID_PIN_1,    ZUCCHINI_SOLENOID_PIN_2);
-Zone pepperZone     ("Peppers",     PEPPER_SENSOR_PIN,      PEPPER_SOLENOID_PIN_1,      PEPPER_SOLENOID_PIN_2);
-Zone cucumberZone   ("Cucumbers",   CUCUMBER_SENSOR_PIN,    CUCUMBER_SOLENOID_PIN_1,    CUCUMBER_SOLENOID_PIN_2);
-Zone melonZone      ("Melons",      MELON_SENSOR_PIN,       MELON_SOLENOID_PIN_1,       MELON_SOLENOID_PIN_2);
+Zone zone1  (ZONE1_SENSOR_PIN,  ZONE1_SOLENOID_PIN_1,   ZONE1_SOLENOID_PIN_2);
+Zone zone2  (ZONE2_SENSOR_PIN,  ZONE2_SOLENOID_PIN_1,   ZONE2_SOLENOID_PIN_2);
+Zone zone3  (ZONE3_SENSOR_PIN,  ZONE3_SOLENOID_PIN_1,   ZONE3_SOLENOID_PIN_2);
+Zone zone4  (ZONE4_SENSOR_PIN,  ZONE4_SOLENOID_PIN_1,   ZONE4_SOLENOID_PIN_2);
 
 bool debugPrint = false;
 
@@ -56,6 +76,12 @@ void    setDryThreshold(void);
 void    setWetThreshold(void);
 char    inputBuffer[15] = "0-0";
 
+void    handleScheduleMenu(void);
+void    updateSchedMenu(void);
+void    saveSchedMenu(void);
+void    exitScheduleMenu(void)     {exitSchedMenu = true;}
+char    schedMenuTime[8] = "12:00PM";
+char    schedMenuMode[9] = "NONE";
 
 void    timeTest(void);
 time_t  lastTime;
@@ -75,6 +101,8 @@ void setup()
 	MM.registerMenu(&MainMenu);
     MM.startWatchdog();
 
+    SchedMan.registerMenu(&SchedMenu);
+
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
@@ -89,20 +117,35 @@ void setup()
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
+    MainMenu.addOption('!', "Schedule Menu", handleScheduleMenu);
 
-    GM.addZone(&zucchiniZone);
-    GM.addZone(&pepperZone);
-    GM.addZone(&cucumberZone);
-    GM.addZone(&melonZone);
+    SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
+    SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
+    SchedMenu.addOption('C', "Dry Threshold", &SchedMenuSettings.dryThresh);
+    SchedMenu.addOption('D', "Wet Threshold", &SchedMenuSettings.wetThresh);
+    SchedMenu.addOption('E', "Duration To Water", &SchedMenuSettings.durationToWater);
+    SchedMenu.addOption('F', "Wet Threshold", &SchedMenuSettings.wetThresh);
+    SchedMenu.addOption('G', "Scheduled Time", &schedMenuTime);
+    SchedMenu.addOption('+', "Scheduled Time", saveSchedMenu);
+    SchedMenu.addOption('!', "EXIT SCHEDULE MENU", exitScheduleMenu);
 
-    GM.m_zones[0]->setDryThreshold(StoreEE.zoneAdryThreshold);
-    GM.m_zones[0]->setWetThreshold(StoreEE.zoneAwetThreshold);
-    GM.m_zones[1]->setDryThreshold(StoreEE.zoneBdryThreshold);
-    GM.m_zones[1]->setWetThreshold(StoreEE.zoneBwetThreshold);
-    GM.m_zones[2]->setDryThreshold(StoreEE.zoneCdryThreshold);
-    GM.m_zones[2]->setWetThreshold(StoreEE.zoneCwetThreshold);
-    GM.m_zones[3]->setDryThreshold(StoreEE.zoneDdryThreshold);
-    GM.m_zones[3]->setWetThreshold(StoreEE.zoneDwetThreshold);
+    GM.addZone(&zone1);
+    GM.addZone(&zone2);
+    GM.addZone(&zone3);
+    GM.addZone(&zone4);
+
+    GM.m_zones[0]->name(StoreEE.zone1name);
+    GM.m_zones[0]->dryThreshold(StoreEE.zone1dryThreshold);
+    GM.m_zones[0]->wetThreshold(StoreEE.zone1wetThreshold);
+    GM.m_zones[1]->name(StoreEE.zone2name);
+    GM.m_zones[1]->dryThreshold(StoreEE.zone2dryThreshold);
+    GM.m_zones[1]->wetThreshold(StoreEE.zone2wetThreshold);
+    GM.m_zones[2]->name(StoreEE.zone3name);
+    GM.m_zones[2]->dryThreshold(StoreEE.zone3dryThreshold);
+    GM.m_zones[2]->wetThreshold(StoreEE.zone3wetThreshold);
+    GM.m_zones[3]->name(StoreEE.zone4name);
+    GM.m_zones[3]->dryThreshold(StoreEE.zone4dryThreshold);
+    GM.m_zones[3]->wetThreshold(StoreEE.zone4wetThreshold);
 
     MM.printHelp(&Serial, true);
 
@@ -121,7 +164,8 @@ void setup()
 
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 
-    GM.m_zones[0]->setScheduleDOW(now()+SECS_PER_MIN);
+    GM.m_zones[0]->setScheduleDOW(now()+ (SECS_PER_HOUR * 12));
+    updateSchedMenu();
 }
 
 void loop(){
@@ -132,7 +176,7 @@ void loop(){
     // if (!sensorTimer.isActive())
     // {
     //     MH.serPtr()->print("Moisture Level: ");
-    //     MH.serPtr()->println(zucchiniZone.moisture());
+    //     MH.serPtr()->println(zone1.moisture());
     //     sensorTimer.Start(1000);
     // }
     if (funkyLights)
@@ -237,27 +281,27 @@ void toggleValve()
     switch (menuValve)
     {
         case 1:
-            zucchiniZone.valveIsOn() ? zucchiniZone.closeValve() : zucchiniZone.openValve();
+            zone1.valveIsOn() ? zone1.closeValve() : zone1.openValve();
             MH.serPtr()->print("Zucchini Zone Valve is now ");
-            zucchiniZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            zone1.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         case 2:
-            pepperZone.valveIsOn() ? pepperZone.closeValve() : pepperZone.openValve();
+            zone2.valveIsOn() ? zone2.closeValve() : zone2.openValve();
             MH.serPtr()->print("Pepper Zone Valve is now ");
-            pepperZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            zone2.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         case 3:
-            cucumberZone.valveIsOn() ? cucumberZone.closeValve() : cucumberZone.openValve();
+            zone3.valveIsOn() ? zone3.closeValve() : zone3.openValve();
             MH.serPtr()->print("Cucumber Zone Valve is now ");
-            cucumberZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            zone3.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         case 4:
-            melonZone.valveIsOn() ? melonZone.closeValve() : melonZone.openValve();
+            zone4.valveIsOn() ? zone4.closeValve() : zone4.openValve();
             MH.serPtr()->print("Melon Zone Valve is now ");
-            melonZone.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+            zone4.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
         break;
 
         default:
@@ -268,21 +312,21 @@ void toggleValve()
 
 void clickyValveTest()
 {
-    zucchiniZone.openValve();
+    zone1.openValve();
     delay(500);
-    zucchiniZone.closeValve();
+    zone1.closeValve();
     delay(500);
-    pepperZone.openValve();
+    zone2.openValve();
     delay(500);
-    pepperZone.closeValve();
+    zone2.closeValve();
     delay(500);
-    cucumberZone.openValve();
+    zone3.openValve();
     delay(500);
-    cucumberZone.closeValve();
+    zone3.closeValve();
     delay(500);
-    melonZone.openValve();
+    zone4.openValve();
     delay(500);
-    melonZone.closeValve();
+    zone4.closeValve();
     delay(500);
 }
 
@@ -359,7 +403,7 @@ void setDryThreshold()
     if (inputBuffer[1] == '\0')
     {
         int moistureRead = GM.m_zones[zone]->moisture();
-        GM.m_zones[zone]->setDryThreshold(moistureRead);
+        GM.m_zones[zone]->dryThreshold(moistureRead);
         MH.serPtr()->print(GM.m_zones[zone]->name());
         MH.serPtr()->print(" - New Dry Threshold: ");
         MH.serPtr()->println(moistureRead);
@@ -371,7 +415,7 @@ void setDryThreshold()
         char buffer[15];
         strcpy(buffer, &inputBuffer[2]);
         newThresh = atoi(buffer);
-        GM.m_zones[zone]->setDryThreshold(newThresh);
+        GM.m_zones[zone]->dryThreshold(newThresh);
         MH.serPtr()->print(GM.m_zones[zone]->name());
         MH.serPtr()->print(" - New Dry Threshold: ");
         MH.serPtr()->println(newThresh);
@@ -381,19 +425,19 @@ void setDryThreshold()
     switch (zone)
     {
         case 0:
-            StoreEE.zoneAdryThreshold = newThresh;
+            StoreEE.zone1dryThreshold = newThresh;
             break;
         
         case 1:
-            StoreEE.zoneBdryThreshold = newThresh;
+            StoreEE.zone2dryThreshold = newThresh;
             break;
 
         case 2:
-            StoreEE.zoneCdryThreshold = newThresh;
+            StoreEE.zone3dryThreshold = newThresh;
             break;
         case 3:
 
-            StoreEE.zoneDdryThreshold = newThresh;
+            StoreEE.zone4dryThreshold = newThresh;
             break;
 
         default:
@@ -423,7 +467,7 @@ void setWetThreshold()
     if (inputBuffer[1] == '\0')
     {
         int moistureRead = GM.m_zones[zone]->moisture();
-        GM.m_zones[zone]->setWetThreshold(moistureRead);
+        GM.m_zones[zone]->wetThreshold(moistureRead);
         MH.serPtr()->print(GM.m_zones[zone]->name());
         MH.serPtr()->print(" - New Wet Threshold: ");
         MH.serPtr()->println(moistureRead);
@@ -435,7 +479,7 @@ void setWetThreshold()
         char buffer[15];
         strcpy(buffer, &inputBuffer[2]);
         newThresh = atoi(buffer);
-        GM.m_zones[zone]->setWetThreshold(newThresh);
+        GM.m_zones[zone]->wetThreshold(newThresh);
         MH.serPtr()->print(GM.m_zones[zone]->name());
         MH.serPtr()->print(" - New Wet Threshold: ");
         MH.serPtr()->println(newThresh);
@@ -445,22 +489,114 @@ void setWetThreshold()
     switch (zone)
     {
         case 0:
-            StoreEE.zoneAwetThreshold = newThresh;
+            StoreEE.zone1wetThreshold = newThresh;
             break;
         
         case 1:
-            StoreEE.zoneBwetThreshold = newThresh;
+            StoreEE.zone2wetThreshold = newThresh;
             break;
 
         case 2:
-            StoreEE.zoneCwetThreshold = newThresh;
+            StoreEE.zone3wetThreshold = newThresh;
             break;
         case 3:
 
-            StoreEE.zoneDwetThreshold = newThresh;
+            StoreEE.zone4wetThreshold = newThresh;
             break;
 
         default:
             break;
     }
+}
+
+void handleScheduleMenu()
+{
+    SchedMan.printMenu();
+    while (exitSchedMenu == false)
+    {
+        WATCHDOG_RESET
+        SchedMan.handleLaptopInput();
+        delay(10);
+    }
+    exitSchedMenu = false;
+    MM.printMenu();
+}
+
+void updateSchedMenu()
+{
+    strcpy(SchedMenuSettings.name, GM.m_zones[currentZone - 1]->name());
+    SchedMenuSettings.schedMode = GM.m_zones[currentZone - 1]->scheduleMode();
+    SchedMenuSettings.timeBetweenWatering = GM.m_zones[currentZone - 1]->timeBetweenWatering();
+    SchedMenuSettings.dryThresh = GM.m_zones[currentZone - 1]->dryThreshold();
+    SchedMenuSettings.wetThresh = GM.m_zones[currentZone - 1]->wetThreshold();
+    SchedMenuSettings.durationToWater = GM.m_zones[currentZone - 1]->durationToWater();
+    SchedMenuSettings.scheduleHour = GM.m_zones[currentZone - 1]->schedDOWhour();
+    SchedMenuSettings.scheduleMin = GM.m_zones[currentZone - 1]->schedDOWmin();
+    memcpy(SchedMenuSettings.scheduleDOWday, GM.m_zones[currentZone - 1]->schedDOWday(), sizeof(SchedMenuSettings.scheduleDOWday));
+
+    int tempHour = SchedMenuSettings.scheduleHour;
+    if (tempHour > 12) tempHour = tempHour-12;
+    if (tempHour == 0) tempHour = 12;
+    itoa(tempHour, schedMenuTime, DEC);
+    if (schedMenuTime[1] == '\0') {schedMenuTime[1] = schedMenuTime[0]; schedMenuTime[0] = '0';}
+    schedMenuTime[2] = ':';
+    itoa(SchedMenuSettings.scheduleMin, &schedMenuTime[3], DEC);
+    if (schedMenuTime[4] == '\0') {schedMenuTime[4] = schedMenuTime[3]; schedMenuTime[3] = '0';}
+    SchedMenuSettings.scheduleHour >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
+    schedMenuTime[6] = 'M';
+    Serial.println(schedMenuTime);
+    Serial.println();
+
+    SchedMan.printMenu();
+}
+
+void saveSchedMenu()
+{
+    switch (currentZone)
+    {
+        case 1:
+        {
+            strcpy(StoreEE.zone1name, SchedMenuSettings.name);
+            StoreEE.zone1dryThreshold = SchedMenuSettings.dryThresh;
+            StoreEE.zone1wetThreshold = SchedMenuSettings.wetThresh;
+            break;
+        }
+        case 2:
+        {
+            strcpy(StoreEE.zone2name, SchedMenuSettings.name);
+            StoreEE.zone2dryThreshold = SchedMenuSettings.dryThresh;
+            StoreEE.zone2wetThreshold = SchedMenuSettings.wetThresh;
+            break;
+        }
+        case 3:
+        {
+            strcpy(StoreEE.zone3name, SchedMenuSettings.name);
+            StoreEE.zone3dryThreshold = SchedMenuSettings.dryThresh;
+            StoreEE.zone3wetThreshold = SchedMenuSettings.wetThresh;
+            break;
+        }
+        case 4:
+        {
+            strcpy(StoreEE.zone4name, SchedMenuSettings.name);
+            StoreEE.zone4dryThreshold = SchedMenuSettings.dryThresh;
+            StoreEE.zone4wetThreshold = SchedMenuSettings.wetThresh;
+            break;
+        }
+        default:
+            MH.serPtr()->println("SOMETHING WENT WRONG!");
+            return;
+    }
+
+    GM.m_zones[currentZone]->name(SchedMenuSettings.name);
+    GM.m_zones[currentZone]->scheduleMode(SchedMenuSettings.schedMode);
+    GM.m_zones[currentZone]->dryThreshold(SchedMenuSettings.dryThresh);
+    GM.m_zones[currentZone]->wetThreshold(SchedMenuSettings.wetThresh);
+    GM.m_zones[currentZone]->schedDOWhour(SchedMenuSettings.scheduleHour);
+    GM.m_zones[currentZone]->schedDOWmin(SchedMenuSettings.scheduleMin);
+    GM.m_zones[currentZone]->durationToWater(SchedMenuSettings.durationToWater);
+    GM.m_zones[currentZone]->timeBetweenWatering(SchedMenuSettings.timeBetweenWatering);
+
+    EEPROM.put(OFFSET_STOREEE, StoreEE);
+    MH.serPtr()->print("Settings saved for ");
+    MH.serPtr()->println(SchedMenuSettings.name);
 }
