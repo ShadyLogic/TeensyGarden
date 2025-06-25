@@ -61,10 +61,7 @@ Timer_ms    sensorTimer;
 uint8_t     menuValve = 0;
 
 time_t  getTeensy3Time();
-void    print12Hour(int digits);
-void    digitalClockDisplay(time_t time);
 void    digitalClockDisplayNow(void) {digitalClockDisplay(now());}
-void    printDigits(int digits);
 void    printGardenStatus(void);
 void    setRTC(void);
 void    toggleValve(void);
@@ -206,58 +203,9 @@ void loop(){
     delay(10);
 }
 
-
-
-void digitalClockDisplay(time_t time){
-    // digital clock display of the time
-    print12Hour(hour(time));
-    printDigits(minute(time));
-    printDigits(second(time));
-    if (hour(time) >= 12)
-    {
-        MH.serPtr()->print("PM,");
-    }
-    else
-    {
-        MH.serPtr()->print("AM,");
-    }
-    MH.serPtr()->print(" ");
-    MH.serPtr()->print(month(time));
-    MH.serPtr()->print("/");
-    MH.serPtr()->print(day(time));
-    MH.serPtr()->print("/");
-    MH.serPtr()->print(year(time)); 
-    MH.serPtr()->println(); 
-}
-
 time_t getTeensy3Time()
 {
     return Teensy3Clock.get();
-}
-
-void printDigits(int digits){
-    // utility function for digital clock display: prints preceding colon and leading 0
-    MH.serPtr()->print(":");
-    if(digits < 10)
-        MH.serPtr()->print('0');
-    MH.serPtr()->print(digits);
-}
-
-void print12Hour(int digits){
-    int theHour = digits % 12;
-    if (theHour == 0)
-    {
-        MH.serPtr()->print(12);
-    }
-    else
-    {
-        MH.serPtr()->print(theHour);
-    }
-}
-
-void printGardenStatus()
-{
-    GM.printZoneStatus(MH.serPtr());
 }
 
 void setRTC()
@@ -274,6 +222,12 @@ void setRTC()
 
     MH.serPtr()->print("NEW TIME: ");
     digitalClockDisplayNow();
+    MH.serPtr()->println();
+}
+
+void printGardenStatus()
+{
+    GM.printZoneStatus(MH.serPtr());
 }
 
 void toggleValve()
@@ -342,6 +296,8 @@ void openAllValves()
 
 void timeTest()
 {
+    MH.serPtr()->print("Raw Now");
+    MH.serPtr()->println(now());
     MH.serPtr()->print("Now - Last = ");
     MH.serPtr()->println(now() - lastTime);
     MH.serPtr()->print("Seconds Since Last = ");
@@ -352,15 +308,19 @@ void timeTest()
     MH.serPtr()->println(numberOfHours(now() - lastTime));
     MH.serPtr()->print("Now = ");
     digitalClockDisplayNow();
+    MH.serPtr()->println();
     MH.serPtr()->print("In 1.5 Hours = ");
     digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
+    MH.serPtr()->println();
     MH.serPtr()->print("Time @ \'0\' = ");
     digitalClockDisplay((time_t)0);
+    MH.serPtr()->println();
     MH.serPtr()->print("Previous Midnight = ");
     digitalClockDisplay(previousMidnight(now()));
+    MH.serPtr()->println();
     MH.serPtr()->print("8PM Today = ");
     digitalClockDisplay(previousMidnight(now()) + (SECS_PER_HOUR * 20));
-    MH.serPtr()->println("This text is \033[1;32mGREEN\033[0m");
+    MH.serPtr()->println();
 }
 
 void setValveRunTime()
@@ -378,6 +338,7 @@ void setValveRunTime()
     MH.serPtr()->print(tempZone->name());
     MH.serPtr()->print(" valve will turn off at ");
     digitalClockDisplay(tempZone->timeToTurnOffValve());
+    MH.serPtr()->println();
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 }
 

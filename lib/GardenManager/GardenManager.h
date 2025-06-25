@@ -21,6 +21,9 @@ enum ScheduleMode
 
 
 String numberToDay(int);
+void    printDigits(int digits);
+void    digitalClockDisplay(time_t time);
+void    print12Hour(int digits);
 
 
 

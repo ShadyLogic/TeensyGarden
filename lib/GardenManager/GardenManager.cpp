@@ -14,13 +14,13 @@ void GardenManager::addZone(Zone* newZone)
 
 void GardenManager::printZoneStatus(Stream* output)
 {
-    output->println("***** Zone Info *****");
+    MH.serPtr()->println("***** Zone Info *****");
     for (int i = 0; i < m_zonesIndex; i++)
     {
         m_zones[i]->printStatus(output);
-        output->println();
+        MH.serPtr()->println();
     }
-    output->println("*********************");
+    MH.serPtr()->println("*********************");
 }
 
 void GardenManager::closeAllValves()
@@ -87,6 +87,7 @@ void Zone::openValve()
 {
     digitalWrite(m_valvePin1, HIGH);
     digitalWrite(m_valvePin2, HIGH);
+    m_lastWaterTime = now();
 }
 
 void Zone::closeValve()
@@ -104,47 +105,52 @@ void Zone::timeToTurnOffValve(time_t newTime)
 
 void Zone::printStatus(Stream* output)
 {
-    output->print(m_zoneName);
-    output->print(" - Mode: ");
+    MH.serPtr()->print(m_zoneName);
+    MH.serPtr()->print(" - Mode: ");
 
     switch (m_schedType)
     {
         case ScheduleMode::NONE:
-            output->println("None");
+            MH.serPtr()->println("None");
             break;
 
         case ScheduleMode::DOW:
-            output->println("DOW");
+            MH.serPtr()->println("DOW");
             break;
 
         case ScheduleMode::INTERVAL:
-            output->println("Interval");
+            MH.serPtr()->println("Interval");
             break;
 
         case ScheduleMode::SENSOR:
-            output->println("Sensor");
+            MH.serPtr()->println("Sensor");
             break;
     }
 
-    output->print("Dry: ");
-    output->print(m_dryThreshold);
-    output->print(" | Wet: ");
-    output->println(m_wetThreshold);
-    output->print("Moisture Level: ");
-    output->println(moisture());
-    output->print("Valve is ");
-    digitalRead(m_valvePin1) ? output->print("\033[1;32mOPEN\033[0m") : output->print("\033[1;31mCLOSED\033[0m");
+    MH.serPtr()->print("Dry: ");
+    MH.serPtr()->print(m_dryThreshold);
+    MH.serPtr()->print(" | Wet: ");
+    MH.serPtr()->println(m_wetThreshold);
+    MH.serPtr()->print("Moisture Level: ");
+    MH.serPtr()->println(moisture());
+    MH.serPtr()->print("Valve is ");
+    digitalRead(m_valvePin1) ? MH.serPtr()->print("\033[1;32mOPEN\033[0m") : MH.serPtr()->print("\033[1;31mCLOSED\033[0m");
     if (m_valveTimerRunning)
     {
         int hourTime = ((timeToTurnOffValve() - now()) / SECS_PER_HOUR);
         int minTime = (((timeToTurnOffValve() - now()) % SECS_PER_HOUR) / SECS_PER_MIN);
         int secTime = ((timeToTurnOffValve() - now()) % SECS_PER_MIN);
-        output->print(" for ");
-        if (hourTime > 0) {output->print(hourTime); output->print("h");}
-        if (minTime > 0) {output->print(minTime); output->print("m");}
-        if (secTime > 0) {output->print(secTime); output->print("s");}
+        MH.serPtr()->print(" for ");
+        if (hourTime > 0) {MH.serPtr()->print(hourTime); MH.serPtr()->print("h");}
+        if (minTime > 0) {MH.serPtr()->print(minTime); MH.serPtr()->print("m");}
+        if (secTime > 0) {MH.serPtr()->print(secTime); MH.serPtr()->print("s");}
     }
-    output->println();
+    else
+    {
+        MH.serPtr()->print("\nLast Watered @ ");
+        digitalClockDisplay(m_lastWaterTime);
+    }
+    MH.serPtr()->println();
 }
 
 void Zone::handleSchedule()
@@ -192,11 +198,13 @@ void Zone::handleSchedDOW()
 void Zone::handleSchedInterval()
 {
     if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
+    openValve();
+    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
+    m_lastWaterTime = now();
 }
 
 void Zone::handleSchedSensor()
 {
-    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
     if (moisture() > m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
@@ -255,5 +263,46 @@ String numberToDay(int number)
             return "Saturday";
         default:
             return "ERROR";
+    }
+}
+
+void digitalClockDisplay(time_t time){
+    // digital clock display of the time
+    print12Hour(hour(time));
+    printDigits(minute(time));
+    printDigits(second(time));
+    if (hour(time) >= 12)
+    {
+        MH.serPtr()->print("PM,");
+    }
+    else
+    {
+        MH.serPtr()->print("AM,");
+    }
+    MH.serPtr()->print(" ");
+    MH.serPtr()->print(month(time));
+    MH.serPtr()->print("/");
+    MH.serPtr()->print(day(time));
+    MH.serPtr()->print("/");
+    MH.serPtr()->print(year(time)); 
+}
+
+void printDigits(int digits){
+    // utility function for digital clock display: prints preceding colon and leading 0
+    MH.serPtr()->print(":");
+    if(digits < 10)
+        MH.serPtr()->print('0');
+    MH.serPtr()->print(digits);
+}
+
+void print12Hour(int digits){
+    int theHour = digits % 12;
+    if (theHour == 0)
+    {
+        MH.serPtr()->print(12);
+    }
+    else
+    {
+        MH.serPtr()->print(theHour);
     }
 }

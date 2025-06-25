@@ -44,15 +44,23 @@ struct EEPROM_Struct
     char        zone1name[20];
     uint16_t    zone1wetThreshold;
     uint16_t    zone1dryThreshold;
+    uint8_t     zone1timeBetweenWatering;
+    uint8_t     zone1durationToWater;
     char        zone2name[20];
     uint16_t    zone2wetThreshold;
     uint16_t    zone2dryThreshold;
+    uint8_t     zone2timeBetweenWatering;
+    uint8_t     zone2durationToWater;
     char        zone3name[20];
     uint16_t    zone3wetThreshold;
     uint16_t    zone3dryThreshold;
+    uint8_t     zone3timeBetweenWatering;
+    uint8_t     zone3durationToWater;
     char        zone4name[20];
     uint16_t    zone4wetThreshold;
     uint16_t    zone4dryThreshold;
+    uint8_t     zone4timeBetweenWatering;
+    uint8_t     zone4durationToWater;
     
 //                                                  //
 //////////////////////////////////////////////////////
@@ -70,15 +78,23 @@ const EEPROM_Struct STOREEE_DEFAULTS =
     "Zone 1",               // zone1name
     500,                    // zone1wetThreshold
     100,                    // zone1dryThreshold
+    24,                     // zone1timeBetweenWatering
+    60,                     // zone1durationToWater
     "Zone 2",               // zone2name
     500,                    // zone2wetThreshold
     100,                    // zone2dryThreshold
+    24,                     // zone2timeBetweenWatering
+    60,                     // zone2durationToWater
     "Zone 3",               // zone3name
     500,                    // zone3wetThreshold
     100,                    // zone3dryThreshold
+    24,                     // zone3timeBetweenWatering
+    60,                     // zone3durationToWater
     "Zone 4",               // zone4name
     500,                    // zone4wetThreshold
     100,                    // zone4dryThreshold
+    24,                     // zone4timeBetweenWatering
+    60,                     // zone4durationToWater
 //                                                  //
 //////////////////////////////////////////////////////
     EEPROM_END_VER_SIG,
