@@ -107,26 +107,7 @@ void Zone::printStatus(Stream* output)
 {
     MH.serPtr()->print(m_zoneName);
     MH.serPtr()->print(" - Mode: ");
-
-    switch (m_schedType)
-    {
-        case ScheduleMode::NONE:
-            MH.serPtr()->println("None");
-            break;
-
-        case ScheduleMode::DOW:
-            MH.serPtr()->println("DOW");
-            break;
-
-        case ScheduleMode::INTERVAL:
-            MH.serPtr()->println("Interval");
-            break;
-
-        case ScheduleMode::SENSOR:
-            MH.serPtr()->println("Sensor");
-            break;
-    }
-
+    MH.serPtr()->println(SchedModeToString(m_schedMode));
     MH.serPtr()->print("Dry: ");
     MH.serPtr()->print(m_dryThreshold);
     MH.serPtr()->print(" | Wet: ");
@@ -155,7 +136,7 @@ void Zone::printStatus(Stream* output)
 
 void Zone::handleSchedule()
 {
-    switch(m_schedType)
+    switch(m_schedMode)
     {
         case DOW:
         {
@@ -183,31 +164,36 @@ void Zone::handleSchedule()
 
 void Zone::handleSchedDOW()
 {
-    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
+    if (now() < m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)) return;
     if (m_schedDOWday[((int)dayOfWeek(now())-1)] == 0) return;
     if (m_schedDOWhour == hour() && m_schedDOWmin == minute() && !m_valveTimerRunning)
     {
         MH.serPtr()->print(name());
         MH.serPtr()->println(" running scheduled watering");
         openValve();
-        timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
+        timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
         m_lastWaterTime = now();
     }
 }
 
 void Zone::handleSchedInterval()
 {
-    if (now() < m_lastWaterTime + m_timeBetweenWatering) return;
+    if (now() < m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)) return;
     openValve();
-    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
+    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     m_lastWaterTime = now();
+    MH.serPtr()->print("Watering ");
+    MH.serPtr()->print(m_zoneName);
+    MH.serPtr()->print(" for ");
+    MH.serPtr()->print(m_durationToWater_min);
+    MH.serPtr()->println(" min");
 }
 
 void Zone::handleSchedSensor()
 {
     if (moisture() > m_dryThreshold) return;
     openValve();
-    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater));
+    timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     m_lastWaterTime = now();
 }
 
@@ -216,8 +202,8 @@ void Zone::setScheduleDOW(time_t time)
     m_schedDOWday[(int)dayOfWeek(time)-1] = true;
     m_schedDOWhour  = hour(time);
     m_schedDOWmin   = minute(time);
-    m_schedType     = ScheduleMode::DOW;
-    m_durationToWater = 15;
+    m_schedMode     = ScheduleMode::DOW;
+    m_durationToWater_min = 15;
 
     printScheduleDOW();
 }
@@ -239,7 +225,7 @@ void Zone::printScheduleDOW()
     if (m_schedDOWmin < 10) MH.serPtr()->print('0');
     MH.serPtr()->print(m_schedDOWmin);
     MH.serPtr()->print(" for ");
-    MH.serPtr()->print(m_durationToWater);
+    MH.serPtr()->print(m_durationToWater_min);
     MH.serPtr()->println(" min");
 }
 
@@ -270,7 +256,7 @@ void digitalClockDisplay(time_t time){
     // digital clock display of the time
     print12Hour(hour(time));
     printDigits(minute(time));
-    printDigits(second(time));
+    // printDigits(second(time));
     if (hour(time) >= 12)
     {
         MH.serPtr()->print("PM,");
@@ -305,4 +291,34 @@ void print12Hour(int digits){
     {
         MH.serPtr()->print(theHour);
     }
+}
+
+ScheduleMode intToSchedMode(int number) 
+{
+    return (ScheduleMode)number;
+}
+
+uint8_t SchedModeToInt(ScheduleMode mode) 
+{
+    return (uint8_t)mode;
+}
+
+String SchedModeToString(ScheduleMode mode)
+{
+    switch (mode)
+    {
+        case ScheduleMode::NONE:
+            return "NONE";
+        
+        case ScheduleMode::DOW:
+            return "DOW";
+
+        case ScheduleMode::INTERVAL:
+            return "INTERVAL";
+
+        case ScheduleMode::SENSOR:
+            return "SENSOR";
+    }
+    
+    return "ERROR";
 }
