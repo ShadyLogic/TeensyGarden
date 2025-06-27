@@ -592,7 +592,7 @@ void MenuManager::printHelp(Stream *serialPtr, bool handleUsbOnlyOptions)
 #endif //ENABLE_BLE
 }
 
-void MenuManager::processUserInput(char userIn[MAX_MENU_CHARS], uint8_t& indexUserIn, int inByte, Stream *serialPtr, bool handleUsbOnlyOptions)
+void MenuManager::processUserInput(char userIn[MAX_CHAR], uint8_t& indexUserIn, int inByte, Stream *serialPtr, bool handleUsbOnlyOptions)
 {
     setSerialOutputStream(serialPtr);    // Send serial output to Serial or to BlueTooth
 
@@ -794,7 +794,7 @@ void MenuManager::handleLaptopInput(void)
 	}
 #endif
 
-    static char userIn[MAX_MENU_CHARS];         // MAX_MENU_CHARS Def'd in Maltbie_Helper.h
+    static char userIn[MAX_CHAR];
     static uint8_t indexUserIn = 0;
     int inByte = 0;
 
@@ -803,9 +803,9 @@ void MenuManager::handleLaptopInput(void)
         inByte = Serial.read();
         Serial.write(inByte);                // Prints the command to Serial one byte at a time
 
-        if (indexUserIn < MAX_MENU_CHARS)
+        if (indexUserIn < MAX_CHAR)
         {
-            if (!((inByte == ASCII_CR) || (inByte == ASCII_LF)))
+            if (!(inByte == ASCII_CR || inByte == ASCII_LF))
             {
                 userIn[indexUserIn++] = inByte; // Append the latest character, unless it is a CR or LF
             }
@@ -836,7 +836,7 @@ void MenuManager::handleLaptopInput(void)
     if (blueToothSerial.isWorking())   // Don't call below if we can't talk to BLE shield (not installed/failed)
     {
         // BLE_Comm returns BCT_NONE if no characters or the command isn't complete yet
-        ble_Cmd_Type btCmd = blueToothSerial.BLE_Comm(userIn, indexUserIn, MAX_MENU_CHARS, inByte, StoreEE_BLE.bleName, StoreEE_BLE.blePassword,  MAX_PW, newColor);
+        ble_Cmd_Type btCmd = blueToothSerial.BLE_Comm(userIn, indexUserIn, MAX_CHAR, inByte, StoreEE_BLE.bleName, StoreEE_BLE.blePassword,  MAX_PW, newColor);
         switch (btCmd)
         {
             case BCT_NewPwAccepted:

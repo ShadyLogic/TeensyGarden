@@ -34,7 +34,7 @@ Menu SchedMenu("**** Schedule Manager ****");
 
 struct ZoneSettings
 {
-    char            name[20];
+    char            name[MAX_CHAR];
     uint8_t         schedMode;
     uint8_t         timeBetweenWatering_hr;
     time_t          lastWaterTime;
@@ -121,11 +121,11 @@ void setup()
     SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
     SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
     SchedMenu.addOption('C', "Schedule Mode", &SchedMenuSettings.schedMode, 3, 0);
-    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh);
-    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh);
-    SchedMenu.addOption('F', "Duration To Water", &SchedMenuSettings.durationToWater_min);
-    SchedMenu.addOption('G', "Time Between Watering", &SchedMenuSettings.timeBetweenWatering_hr);
-    SchedMenu.addOption('I', "Scheduled Time", &schedMenuTime);
+    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 511, 0);
+    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 511, 0);
+    SchedMenu.addOption('F', "Duration To Water", &SchedMenuSettings.durationToWater_min, 255, 0);
+    SchedMenu.addOption('G', "Time Between Watering", &SchedMenuSettings.timeBetweenWatering_hr, 255, 0);
+    SchedMenu.addOption('I', "Scheduled Time", schedMenuTime);
     SchedMenu.addOption('+', "Save Zone Settings", saveSchedMenu);
     SchedMenu.addOption('!', "EXIT SCHEDULE MENU", exitScheduleMenu);
 
@@ -499,7 +499,7 @@ void setWetThreshold()
 void handleScheduleMenu()
 {
     schedMenuTimeout.Start(600000);
-    SchedMan.printMenu();
+    updateSchedMenu();
     while (exitSchedMenu == false)
     {
         WATCHDOG_RESET
@@ -600,8 +600,10 @@ void saveSchedMenu()
     GM.m_zones[currentZone - 1]->schedDOWhour(SchedMenuSettings.scheduleHour);
     GM.m_zones[currentZone - 1]->schedDOWmin(SchedMenuSettings.scheduleMin);
     GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
-    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr(SchedMenuSettings.timeBetweenWatering_hr);
+    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
+
+    delay(100);
 
     EEPROM.put(OFFSET_STOREEE, StoreEE);
     MH.serPtr()->print("Settings saved for ");
