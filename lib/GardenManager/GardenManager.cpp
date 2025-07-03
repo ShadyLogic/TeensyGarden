@@ -239,6 +239,11 @@ void Zone::handleSchedDOW()
         MH.serPtr()->println(" running scheduled watering");
         openValve();
         timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
+        MH.serPtr()->print("Watering ");
+        MH.serPtr()->print(m_zoneName);
+        MH.serPtr()->print(" for ");
+        MH.serPtr()->print(m_durationToWater_min);
+        MH.serPtr()->println(" min");
     }
 }
 
@@ -259,6 +264,11 @@ void Zone::handleSchedSensor()
     if (moisture() > m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
+    MH.serPtr()->print("Watering ");
+    MH.serPtr()->print(m_zoneName);
+    MH.serPtr()->print(" for ");
+    MH.serPtr()->print(m_durationToWater_min);
+    MH.serPtr()->println(" min");
 }
 
 void Zone::handleSchedIntervalSensor()

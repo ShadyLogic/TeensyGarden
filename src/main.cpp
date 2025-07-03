@@ -109,7 +109,7 @@ void setup()
 
     SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
     SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
-    SchedMenu.addOption('C', "Schedule Mode", &SchedMenuSettings.schedMode, 3, 0);
+    SchedMenu.addOption('C', "Schedule Mode", &SchedMenuSettings.schedMode, 4, 0);
     SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 511, 0);
     SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 511, 0);
     SchedMenu.addOption('F', "Duration To Water", &SchedMenuSettings.durationToWater_min, 255, 0);
