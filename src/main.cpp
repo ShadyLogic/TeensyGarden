@@ -65,12 +65,9 @@ void    digitalClockDisplayNow(void) {digitalClockDisplay(now());}
 void    printGardenStatus(void);
 void    setRTC(void);
 void    toggleValve(void);
-void    clickyValveTest(void);
 void    closeAllValves(void);
 void    openAllValves(void);
 void    setValveRunTime(void);
-void    setDryThreshold(void);
-void    setWetThreshold(void);
 char    inputBuffer[15] = "0-0";
 
 void    handleScheduleMenu(void);
@@ -81,7 +78,6 @@ char    schedMenuTime[8] = "12:00PM";
 char    schedMenuMode[9] = "NONE";
 Timer_ms schedMenuTimeout;
 
-void    timeTest(void);
 time_t  lastTime;
 
 bool    funkyLights = false;
@@ -257,70 +253,6 @@ void setValveRunTime()
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 }
 
-void setDryThreshold()
-{
-    int zone = inputBuffer[0] - '0' - 1;
-    if (zone < 0 || zone > 3)
-    {
-        MH.serPtr()->print("Invalid Zone: ");
-        MH.serPtr()->println(zone + 1);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
-    }
-
-    if (inputBuffer[1] != '-' && inputBuffer[1] != '\0')
-    {
-        MH.serPtr()->println("Format must be \"Valve#-Value\"(including the dash)");
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
-    }
-
-    int newThresh;
-    if (inputBuffer[1] == '\0')
-    {
-        int moistureRead = GM.m_zones[zone]->moisture();
-        GM.m_zones[zone]->dryThreshold(moistureRead);
-        MH.serPtr()->print(GM.m_zones[zone]->name());
-        MH.serPtr()->print(" - New Dry Threshold: ");
-        MH.serPtr()->println(moistureRead);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        newThresh = moistureRead;
-    }
-    else
-    {
-        char buffer[15];
-        strcpy(buffer, &inputBuffer[2]);
-        newThresh = atoi(buffer);
-        GM.m_zones[zone]->dryThreshold(newThresh);
-        MH.serPtr()->print(GM.m_zones[zone]->name());
-        MH.serPtr()->print(" - New Dry Threshold: ");
-        MH.serPtr()->println(newThresh);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-    }
-
-    switch (zone)
-    {
-        case 0:
-            StoreEE.zone1dryThreshold = newThresh;
-            break;
-        
-        case 1:
-            StoreEE.zone2dryThreshold = newThresh;
-            break;
-
-        case 2:
-            StoreEE.zone3dryThreshold = newThresh;
-            break;
-        case 3:
-
-            StoreEE.zone4dryThreshold = newThresh;
-            break;
-
-        default:
-            break;
-    }
-}
-
 void handleScheduleMenu()
 {
     schedMenuTimeout.Start(600000);
@@ -358,7 +290,7 @@ void updateSchedMenu()
     if (schedMenuTime[4] == '\0') {schedMenuTime[4] = schedMenuTime[3]; schedMenuTime[3] = '0';}
     SchedMenuSettings.scheduleHour >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
     schedMenuTime[6] = 'M';
-    Serial.println(schedMenuTime);
+    Serial.println(print12Hour(SchedMenuSettings.scheduleTime_afterMidnight));
     Serial.println();
 
     SchedMan.printMenu();
@@ -421,8 +353,7 @@ void saveSchedMenu()
     GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->dryThreshold(SchedMenuSettings.dryThresh);
     GM.m_zones[currentZone - 1]->wetThreshold(SchedMenuSettings.wetThresh);
-    GM.m_zones[currentZone - 1]->schedDOWhour(SchedMenuSettings.scheduleHour);
-    GM.m_zones[currentZone - 1]->schedDOWmin(SchedMenuSettings.scheduleMin);
+    GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
     GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
     GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
