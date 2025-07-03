@@ -278,20 +278,21 @@ void updateSchedMenu()
     SchedMenuSettings.durationToWater_min = GM.m_zones[currentZone - 1]->durationToWater_min();
     SchedMenuSettings.scheduleTime_afterMidnight = GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight();
     SchedMenuSettings.lastWaterTime = GM.m_zones[currentZone - 1]->lastWaterTime();
+    SchedMenuSettings.scheduleTime_afterMidnight = GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight();
     memcpy(SchedMenuSettings.scheduleDOWday, GM.m_zones[currentZone - 1]->schedDOWday(), sizeof(SchedMenuSettings.scheduleDOWday));
 
-    int tempHour = SchedMenuSettings.scheduleHour;
+    int tempHour = hour(SchedMenuSettings.scheduleTime_afterMidnight);
     if (tempHour > 12) tempHour = tempHour-12;
     if (tempHour == 0) tempHour = 12;
     itoa(tempHour, schedMenuTime, DEC);
     if (schedMenuTime[1] == '\0') {schedMenuTime[1] = schedMenuTime[0]; schedMenuTime[0] = '0';}
     schedMenuTime[2] = ':';
-    itoa(SchedMenuSettings.scheduleMin, &schedMenuTime[3], DEC);
+    itoa(minute(SchedMenuSettings.scheduleTime_afterMidnight), &schedMenuTime[3], DEC);
     if (schedMenuTime[4] == '\0') {schedMenuTime[4] = schedMenuTime[3]; schedMenuTime[3] = '0';}
-    SchedMenuSettings.scheduleHour >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
+    hour(SchedMenuSettings.scheduleTime_afterMidnight) >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
     schedMenuTime[6] = 'M';
-    Serial.println(print12Hour(SchedMenuSettings.scheduleTime_afterMidnight));
-    Serial.println();
+    schedMenuTime[7] = '\0';
+    Serial.println("\n");
 
     SchedMan.printMenu();
 }

@@ -36,49 +36,52 @@ public:
     Zone(){}
     Zone(uint8_t, uint8_t, uint8_t = 200);
 
-    const char*     name(void)                          {return m_zoneName;}
-    void            name(char* newName)                 {strcpy(m_zoneName, newName);}
+    const char*     name(void)                                  {return m_zoneName;}
+    void            name(char* newName)                         {strcpy(m_zoneName, newName);}
 
-    ScheduleMode    scheduleMode()                      {return m_schedMode;}
-    void            scheduleMode(ScheduleMode st)       {m_schedMode = st;}
+    ScheduleMode    scheduleMode()                              {return m_schedMode;}
+    void            scheduleMode(ScheduleMode st)               {m_schedMode = st;}
 
-    time_t          lastWaterTime(void)                 {return m_lastWaterTime;}
-    void            lastWaterTime(time_t newTime)       {m_lastWaterTime = newTime;}
+    time_t          lastWaterTime(void)                         {return m_lastWaterTime;}
+    void            lastWaterTime(time_t newTime)               {m_lastWaterTime = newTime;}
 
-    time_t          timeBetweenWatering_hr(void)           {return m_timeBetweenWatering_hr;}
-    void            timeBetweenWatering_hr(time_t newTBW)  {m_timeBetweenWatering_hr = newTBW;}
+    time_t          timeBetweenWatering_hr(void)                {return m_timeBetweenWatering_hr;}
+    void            timeBetweenWatering_hr(time_t newTBW)       {m_timeBetweenWatering_hr = newTBW;}
 
-    time_t          timeToTurnOffValve()                {return m_timeToTurnOffValve;}
+    time_t          timeToTurnOffValve()                        {return m_timeToTurnOffValve;}
     void            timeToTurnOffValve(time_t);
 
-    bool            valveTimerRunning()                 {return m_valveTimerRunning;}
-    bool            valveTimerExpired()                 {return (now() > m_timeToTurnOffValve);}
-    void            startValveTimer()                   {m_valveTimerRunning = true;}
+    bool            valveTimerRunning()                         {return m_valveTimerRunning;}
+    bool            valveTimerExpired()                         {return (now() > m_timeToTurnOffValve);}
+    void            startValveTimer()                           {m_valveTimerRunning = true;}
 
-    bool            valveIsOn(void)                     {return digitalRead(m_valvePin1);}
+    bool            valveIsOn(void)                             {return digitalRead(m_valvePin1);}
     void            openValve(void);
     void            closeValve(void);
 
-    int             moisture(void)                      {return analogRead(m_moistureSensorPin);}
-    uint16_t        dryThreshold(void)                  {return m_dryThreshold;}
-    void            dryThreshold(uint16_t value)        {m_dryThreshold = value;}
-    uint16_t        wetThreshold(void)                  {return m_wetThreshold;}
-    void            wetThreshold(uint16_t value)        {m_wetThreshold = value;}
+    int             moisture(void)                              {return analogRead(m_moistureSensorPin);}
+    uint16_t        dryThreshold(void)                          {return m_dryThreshold;}
+    void            dryThreshold(uint16_t value)                {m_dryThreshold = value;}
+    uint16_t        wetThreshold(void)                          {return m_wetThreshold;}
+    void            wetThreshold(uint16_t value)                {m_wetThreshold = value;}
 
-    uint8_t         durationToWater_min(void)               {return m_durationToWater_min;}
-    void            durationToWater_min(uint8_t newDur)     {m_durationToWater_min = newDur;}
+    uint8_t         durationToWater_min(void)                   {return m_durationToWater_min;}
+    void            durationToWater_min(uint8_t newDur)         {m_durationToWater_min = newDur;}
 
     void            handleSchedule(void);
     void            printStatus(Stream*);
 
-    ScheduleMode    schedMode(void)                     {return m_schedMode;}
-    void            schedMode(ScheduleMode mode)        {m_schedMode = mode;}
+    ScheduleMode    schedMode(void)                             {return m_schedMode;}
+    void            schedMode(ScheduleMode mode)                {m_schedMode = mode;}
 
     void            setScheduleDOW(time_t);
     void            printScheduleDOW();
 
-    time_t          scheduleTime_afterMidnight(void)                  {return m_scheduleTime_afterMidnight;}
-    void            scheduleTime_afterMidnight(time_t newTime)       {m_scheduleTime_afterMidnight = newTime;}
+    time_t          scheduleTime_afterMidnight(void)            {return m_scheduleTime_afterMidnight;}
+    void            scheduleTime_afterMidnight(time_t newTime)  {m_scheduleTime_afterMidnight = newTime;}
+
+    bool*           schedDOWday(void)                           {return m_schedDOWday;}
+    void            schedDOWday(bool newDays[7])                {memcpy(m_schedDOWday, newDays, sizeof(m_schedDOWday));}
 
 private:
     char            m_zoneName[20];
