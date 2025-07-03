@@ -16,7 +16,8 @@ enum ScheduleMode
     NONE,
     DOW,
     INTERVAL,
-    SENSOR
+    SENSOR,
+    INTERVAL_SENSOR
 };
 
 
@@ -76,18 +77,14 @@ public:
     void            setScheduleDOW(time_t);
     void            printScheduleDOW();
 
-    uint8_t         schedDOWhour(void)                  {return m_schedDOWhour;}
-    void            schedDOWhour(uint8_t newHour)       {m_schedDOWhour = newHour;}
-    uint8_t         schedDOWmin(void)                   {return m_schedDOWmin;}
-    void            schedDOWmin(uint8_t newMin)         {m_schedDOWhour = newMin;}
-    bool*           schedDOWday(void)                   {return m_schedDOWday;}
+    time_t          scheduleTime_afterMidnight(void)                  {return m_scheduleTime_afterMidnight;}
+    void            scheduleTime_afterMidnight(time_t newTime)       {m_scheduleTime_afterMidnight = newTime;}
 
 private:
     char            m_zoneName[20];
     ScheduleMode    m_schedMode;
     bool            m_schedDOWday[7];
-    uint8_t         m_schedDOWhour;
-    uint8_t         m_schedDOWmin;
+    time_t          m_scheduleTime_afterMidnight;
     time_t          m_nextWaterTime;
     time_t          m_lastWaterTime;
     time_t          m_timeToTurnOffValve;
@@ -103,6 +100,7 @@ private:
     void            handleSchedDOW(void);
     void            handleSchedInterval(void);
     void            handleSchedSensor(void);
+    void            handleSchedIntervalSensor(void);
 };
 
 
@@ -115,6 +113,7 @@ public:
     void openAllValves();
     Zone* valveRunTime(int, int);
     void maintain();
+    void saveAllZones();
 
     Zone*    m_zones[MAX_ZONES];
 

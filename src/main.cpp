@@ -41,8 +41,7 @@ struct ZoneSettings
     uint16_t        dryThresh;
     uint16_t        wetThresh;
     uint8_t         durationToWater_min;
-    uint8_t         scheduleHour;
-    uint8_t         scheduleMin;
+    time_t          scheduleTime_afterMidnight;
     bool            scheduleDOWday[7];
 };
 ZoneSettings SchedMenuSettings;
@@ -106,13 +105,7 @@ void setup()
     MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
-    MainMenu.addOption('E', "Clicky Valve Test", clickyValveTest);
-    MainMenu.addOption('F', "Time Test", timeTest);
-    MainMenu.addOption('G', "Valve Run Time (Valve#-Min)", inputBuffer, setValveRunTime);
-    MainMenu.addOption('I', "Funky Lights", &funkyLights);
-    MainMenu.addOption('J', "PWM Test", &PWMtest);
-    MainMenu.addOption('K', "Set Zone Dry Threshold (Valve#-Value)", inputBuffer, setDryThreshold);
-    MainMenu.addOption('L', "Set Zone Wet Threshold (Valve#-Value)", inputBuffer, setWetThreshold);
+    MainMenu.addOption('G', "Valve Run Timer (Valve#-Min)", inputBuffer, setValveRunTime);
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
@@ -196,36 +189,6 @@ void loop(){
 	MM.handleLaptopInput();
     GM.maintain();
 
-    // if (!sensorTimer.isActive())
-    // {
-    //     MH.serPtr()->print("Moisture Level: ");
-    //     MH.serPtr()->println(zone1.moisture());
-    //     sensorTimer.Start(1000);
-    // }
-    if (funkyLights)
-    {
-        static int curSec = 0;
-        if (second(now()) != curSec){
-            curSec = second(now());
-            if (second(now()) % 2 > 0) digitalWrite(2, !digitalRead(2));
-            if (second(now()) % 3 > 0) digitalWrite(3, !digitalRead(3));
-            if (second(now()) % 4 > 0) digitalWrite(4, !digitalRead(4));
-            if (second(now()) % 5 > 0) digitalWrite(5, !digitalRead(5));
-            if (second(now()) % 6 > 0) digitalWrite(6, !digitalRead(6));
-            if (second(now()) % 7 > 0) digitalWrite(7, !digitalRead(7));
-            if (second(now()) % 8 > 0) digitalWrite(8, !digitalRead(8));
-            if (second(now()) % 9 > 0) digitalWrite(9, !digitalRead(9));
-        }
-    }
-
-    if (PWMtest)
-    {
-        static int pwmSec = 0;
-        analogWrite(2, pwmSec % 255);
-        pwmSec++;
-        pinMode(2, OUTPUT);
-    }
-
     delay(10);
 }
 
@@ -258,56 +221,11 @@ void printGardenStatus()
 
 void toggleValve()
 {
-    switch (menuValve)
-    {
-        case 1:
-            zone1.valveIsOn() ? zone1.closeValve() : zone1.openValve();
-            MH.serPtr()->print("Zucchini Zone Valve is now ");
-            zone1.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
-        break;
-
-        case 2:
-            zone2.valveIsOn() ? zone2.closeValve() : zone2.openValve();
-            MH.serPtr()->print("Pepper Zone Valve is now ");
-            zone2.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
-        break;
-
-        case 3:
-            zone3.valveIsOn() ? zone3.closeValve() : zone3.openValve();
-            MH.serPtr()->print("Cucumber Zone Valve is now ");
-            zone3.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
-        break;
-
-        case 4:
-            zone4.valveIsOn() ? zone4.closeValve() : zone4.openValve();
-            MH.serPtr()->print("Melon Zone Valve is now ");
-            zone4.valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
-        break;
-
-        default:
-        break;
-    }
+    GM.m_zones[menuValve-1]->valveIsOn() ? GM.m_zones[menuValve-1]->closeValve() : GM.m_zones[menuValve-1]->openValve();
+    MH.serPtr()->print(GM.m_zones[menuValve-1]->name());
+    MH.serPtr()->print(" Valve is now ");
+    GM.m_zones[menuValve-1]->valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
     menuValve = 0;
-}
-
-void clickyValveTest()
-{
-    zone1.openValve();
-    delay(500);
-    zone1.closeValve();
-    delay(500);
-    zone2.openValve();
-    delay(500);
-    zone2.closeValve();
-    delay(500);
-    zone3.openValve();
-    delay(500);
-    zone3.closeValve();
-    delay(500);
-    zone4.openValve();
-    delay(500);
-    zone4.closeValve();
-    delay(500);
 }
 
 void closeAllValves()
@@ -318,35 +236,6 @@ void closeAllValves()
 void openAllValves()
 {
     GM.openAllValves();
-}
-
-void timeTest()
-{
-    MH.serPtr()->print("Raw Now = ");
-    MH.serPtr()->println(now());
-    MH.serPtr()->print("Now - Last = ");
-    MH.serPtr()->println(now() - lastTime);
-    MH.serPtr()->print("Seconds Since Last = ");
-    MH.serPtr()->println(numberOfSeconds(now() - lastTime));
-    MH.serPtr()->print("Minutes Since Last = ");
-    MH.serPtr()->println(numberOfMinutes(now() - lastTime));
-    MH.serPtr()->print("Hours Since Last = ");
-    MH.serPtr()->println(numberOfHours(now() - lastTime));
-    MH.serPtr()->print("Now = ");
-    digitalClockDisplayNow();
-    MH.serPtr()->println();
-    MH.serPtr()->print("In 1.5 Hours = ");
-    digitalClockDisplay(now() + (SECS_PER_HOUR * 1.5));
-    MH.serPtr()->println();
-    MH.serPtr()->print("Time @ \'0\' = ");
-    digitalClockDisplay((time_t)0);
-    MH.serPtr()->println();
-    MH.serPtr()->print("Previous Midnight = ");
-    digitalClockDisplay(previousMidnight(now()));
-    MH.serPtr()->println();
-    MH.serPtr()->print("8PM Today = ");
-    digitalClockDisplay(previousMidnight(now()) + (SECS_PER_HOUR * 20));
-    MH.serPtr()->println();
 }
 
 void setValveRunTime()
@@ -432,70 +321,6 @@ void setDryThreshold()
     }
 }
 
-void setWetThreshold()
-{
-    int zone = inputBuffer[0] - '0' - 1;
-    if (zone < 0 || zone > 3)
-    {
-        MH.serPtr()->print("Invalid Zone: ");
-        MH.serPtr()->println(zone + 1);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
-    }
-
-    if (inputBuffer[1] != '-' && inputBuffer[1] != '\0')
-    {
-        MH.serPtr()->println("Format must be \"Valve#-Value\"(including the dash)");
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        return;
-    }
-
-    int newThresh;
-    if (inputBuffer[1] == '\0')
-    {
-        int moistureRead = GM.m_zones[zone]->moisture();
-        GM.m_zones[zone]->wetThreshold(moistureRead);
-        MH.serPtr()->print(GM.m_zones[zone]->name());
-        MH.serPtr()->print(" - New Wet Threshold: ");
-        MH.serPtr()->println(moistureRead);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-        newThresh = moistureRead;
-    }
-    else
-    {
-        char buffer[15];
-        strcpy(buffer, &inputBuffer[2]);
-        newThresh = atoi(buffer);
-        GM.m_zones[zone]->wetThreshold(newThresh);
-        MH.serPtr()->print(GM.m_zones[zone]->name());
-        MH.serPtr()->print(" - New Wet Threshold: ");
-        MH.serPtr()->println(newThresh);
-        memset(inputBuffer, '\0', sizeof(inputBuffer));
-    }
-
-    switch (zone)
-    {
-        case 0:
-            StoreEE.zone1wetThreshold = newThresh;
-            break;
-        
-        case 1:
-            StoreEE.zone2wetThreshold = newThresh;
-            break;
-
-        case 2:
-            StoreEE.zone3wetThreshold = newThresh;
-            break;
-        case 3:
-
-            StoreEE.zone4wetThreshold = newThresh;
-            break;
-
-        default:
-            break;
-    }
-}
-
 void handleScheduleMenu()
 {
     schedMenuTimeout.Start(600000);
@@ -519,8 +344,7 @@ void updateSchedMenu()
     SchedMenuSettings.dryThresh = GM.m_zones[currentZone - 1]->dryThreshold();
     SchedMenuSettings.wetThresh = GM.m_zones[currentZone - 1]->wetThreshold();
     SchedMenuSettings.durationToWater_min = GM.m_zones[currentZone - 1]->durationToWater_min();
-    SchedMenuSettings.scheduleHour = GM.m_zones[currentZone - 1]->schedDOWhour();
-    SchedMenuSettings.scheduleMin = GM.m_zones[currentZone - 1]->schedDOWmin();
+    SchedMenuSettings.scheduleTime_afterMidnight = GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight();
     SchedMenuSettings.lastWaterTime = GM.m_zones[currentZone - 1]->lastWaterTime();
     memcpy(SchedMenuSettings.scheduleDOWday, GM.m_zones[currentZone - 1]->schedDOWday(), sizeof(SchedMenuSettings.scheduleDOWday));
 

@@ -41,34 +41,38 @@ struct EEPROM_Struct
 // Application Specific Config Here //                                                      //STRUCT DEFINITION//
 //////////////////////////////////////////////////////
 //                                                  //
-    char        zone1name[20];
+    char        zone1name[MAX_CHAR];
     uint8_t     zone1scheduleMode;
     uint16_t    zone1wetThreshold;
     uint16_t    zone1dryThreshold;
     uint8_t     zone1timeBetweenWatering_hr;
     uint8_t     zone1durationToWater_min;
     double      zone1lastWaterTime;
-    char        zone2name[20];
+    double      zone1scheduleTime_afterMidnight;
+    char        zone2name[MAX_CHAR];
     uint8_t     zone2scheduleMode;
     uint16_t    zone2wetThreshold;
     uint16_t    zone2dryThreshold;
     uint8_t     zone2timeBetweenWatering_hr;
     uint8_t     zone2durationToWater_min;
     double      zone2lastWaterTime;
-    char        zone3name[20];
+    double      zone2scheduleTime_afterMidnight;
+    char        zone3name[MAX_CHAR];
     uint8_t     zone3scheduleMode;
     uint16_t    zone3wetThreshold;
     uint16_t    zone3dryThreshold;
     uint8_t     zone3timeBetweenWatering_hr;
     uint8_t     zone3durationToWater_min;
     double      zone3lastWaterTime;
-    char        zone4name[20];
+    double      zone3scheduleTime_afterMidnight;
+    char        zone4name[MAX_CHAR];
     uint8_t     zone4scheduleMode;
     uint16_t    zone4wetThreshold;
     uint16_t    zone4dryThreshold;
     uint8_t     zone4timeBetweenWatering_hr;
     uint8_t     zone4durationToWater_min;
     double      zone4lastWaterTime;
+    double      zone4scheduleTime_afterMidnight;
     
 //                                                  //
 //////////////////////////////////////////////////////
@@ -89,28 +93,32 @@ const EEPROM_Struct STOREEE_DEFAULTS =
     100,                    // zone1dryThreshold
     24,                     // zone1timeBetweenWatering_hr
     60,                     // zone1durationToWater_min
-    0,                      // zone1lastWaterTime
+    0.0,                    // zone1lastWaterTime
+    0.0,                    // zone1scheduleTime_afterMidnight
     "Zone 2",               // zone2name
     0,                      // zone2scheduleMode
     500,                    // zone2wetThreshold
     100,                    // zone2dryThreshold
     24,                     // zone2timeBetweenWatering_hr
     60,                     // zone2durationToWater_min
-    0,                      // zone2lastWaterTime
+    0.0,                    // zone2lastWaterTime
+    0.0,                    // zone2scheduleTime_afterMidnight
     "Zone 3",               // zone3name
     0,                      // zone3scheduleMode
     500,                    // zone3wetThreshold
     100,                    // zone3dryThreshold
     24,                     // zone3timeBetweenWatering_hr
     60,                     // zone3durationToWater_min
-    0,                      // zone3lastWaterTime
+    0.0,                    // zone3lastWaterTime
+    0.0,                    // zone3scheduleTime_afterMidnight
     "Zone 4",               // zone4name
     0,                      // zone4scheduleMode
     500,                    // zone4wetThreshold
     100,                    // zone4dryThreshold
     24,                     // zone4timeBetweenWatering_hr
     60,                     // zone4durationToWater_min
-    0,                      // zone4lastWaterTime
+    0.0,                    // zone4lastWaterTime
+    0.0,                    // zone4scheduleTime_afterMidnight
 //                                                  //
 //////////////////////////////////////////////////////
     EEPROM_END_VER_SIG,
