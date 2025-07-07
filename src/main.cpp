@@ -303,6 +303,17 @@ void updateSchedMenu()
 
 void saveSchedMenu()
 {
+
+    time_t tempTime = 0;
+
+    tempTime += (time_t)(schedMenuTime[0] - '0') * (SECS_PER_HOUR * 10);
+    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR;
+    tempTime += (time_t)(schedMenuTime[3] - '0') * (SECS_PER_MIN * 10);
+    tempTime += (time_t)(schedMenuTime[4] - '0') * SECS_PER_MIN;
+    if (schedMenuTime[5] == 'P') tempTime += (SECS_PER_HOUR * 12);
+    SchedMenuSettings.scheduleTime_afterMidnight = tempTime;
+    
+
     switch (currentZone)
     {
         case 1:
@@ -314,6 +325,7 @@ void saveSchedMenu()
             StoreEE.zone1durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone1scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone1lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone1scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 2:
@@ -325,6 +337,7 @@ void saveSchedMenu()
             StoreEE.zone2durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone2scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone2lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone2scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 3:
@@ -336,6 +349,7 @@ void saveSchedMenu()
             StoreEE.zone3durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone3scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone3lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone3scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 4:
@@ -347,6 +361,7 @@ void saveSchedMenu()
             StoreEE.zone4durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone4scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone4lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone4scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         default:
@@ -362,6 +377,7 @@ void saveSchedMenu()
     GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
     GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
+    GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
 
     delay(100);
 
