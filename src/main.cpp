@@ -135,6 +135,7 @@ void setup()
     GM.m_zones[0]->durationToWater_min(StoreEE.zone1durationToWater_min);
     GM.m_zones[0]->schedMode(intToSchedMode(StoreEE.zone1scheduleMode));
     GM.m_zones[0]->lastWaterTime((time_t)StoreEE.zone1lastWaterTime);
+    GM.m_zones[0]->scheduleTime_afterMidnight((time_t)StoreEE.zone1scheduleTime_afterMidnight);
 
     GM.m_zones[1]->name(StoreEE.zone2name);
     GM.m_zones[1]->dryThreshold(StoreEE.zone2dryThreshold);
@@ -143,6 +144,7 @@ void setup()
     GM.m_zones[1]->durationToWater_min(StoreEE.zone2durationToWater_min);
     GM.m_zones[1]->schedMode(intToSchedMode(StoreEE.zone2scheduleMode));
     GM.m_zones[1]->lastWaterTime((time_t)StoreEE.zone2lastWaterTime);
+    GM.m_zones[1]->scheduleTime_afterMidnight((time_t)StoreEE.zone2scheduleTime_afterMidnight);
 
     GM.m_zones[2]->name(StoreEE.zone3name);
     GM.m_zones[2]->dryThreshold(StoreEE.zone3dryThreshold);
@@ -151,6 +153,7 @@ void setup()
     GM.m_zones[2]->durationToWater_min(StoreEE.zone3durationToWater_min);
     GM.m_zones[2]->schedMode(intToSchedMode(StoreEE.zone3scheduleMode));
     GM.m_zones[2]->lastWaterTime((time_t)StoreEE.zone3lastWaterTime);
+    GM.m_zones[2]->scheduleTime_afterMidnight((time_t)StoreEE.zone3scheduleTime_afterMidnight);
 
     GM.m_zones[3]->name(StoreEE.zone4name);
     GM.m_zones[3]->dryThreshold(StoreEE.zone4dryThreshold);
@@ -159,6 +162,7 @@ void setup()
     GM.m_zones[3]->durationToWater_min(StoreEE.zone4durationToWater_min);
     GM.m_zones[3]->schedMode(intToSchedMode(StoreEE.zone4scheduleMode));
     GM.m_zones[3]->lastWaterTime((time_t)StoreEE.zone4lastWaterTime);
+    GM.m_zones[3]->scheduleTime_afterMidnight((time_t)StoreEE.zone4scheduleTime_afterMidnight);
 
     MM.printHelp(&Serial, true);
 
