@@ -55,8 +55,6 @@ Zone zone2  (ZONE2_SENSOR_PIN,  ZONE2_SOLENOID_PIN_1,   ZONE2_SOLENOID_PIN_2);
 Zone zone3  (ZONE3_SENSOR_PIN,  ZONE3_SOLENOID_PIN_1,   ZONE3_SOLENOID_PIN_2);
 Zone zone4  (ZONE4_SENSOR_PIN,  ZONE4_SOLENOID_PIN_1,   ZONE4_SOLENOID_PIN_2);
 
-bool debugPrint = false;
-
 Timer_ms    sensorTimer;
 uint8_t     menuValve = 0;
 
@@ -98,7 +96,6 @@ void setup()
     SchedMan.registerMenu(&SchedMenu);
 
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
-    MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
     MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
     MainMenu.addOption('G', "Valve Run Timer (Valve#-Min)", inputBuffer, setValveRunTime);
@@ -110,8 +107,8 @@ void setup()
     SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
     SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
     SchedMenu.addOption('C', "Schedule Mode", &SchedMenuSettings.schedMode, 4, 0);
-    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 511, 0);
-    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 511, 0);
+    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 1023, 0);
+    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 1023, 0);
     SchedMenu.addOption('F', "Duration To Water", &SchedMenuSettings.durationToWater_min, 255, 0);
     SchedMenu.addOption('G', "Time Between Watering", &SchedMenuSettings.timeBetweenWatering_hr, 255, 0);
     SchedMenu.addOption('I', "Scheduled Time", schedMenuTime);
@@ -303,15 +300,18 @@ void updateSchedMenu()
 
 void saveSchedMenu()
 {
-
     time_t tempTime = 0;
 
-    tempTime += (time_t)(schedMenuTime[0] - '0') * (SECS_PER_HOUR * 10);
-    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR;
+    tempTime += (time_t)(schedMenuTime[0] - '0') * (SECS_PER_HOUR * 10 * (schedMenuTime[1] != '2'));
+    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR * (schedMenuTime[1] != '2' && schedMenuTime[1] != 1);
     tempTime += (time_t)(schedMenuTime[3] - '0') * (SECS_PER_MIN * 10);
     tempTime += (time_t)(schedMenuTime[4] - '0') * SECS_PER_MIN;
     if (schedMenuTime[5] == 'P') tempTime += (SECS_PER_HOUR * 12);
+    tempTime = tempTime % SECS_PER_DAY;
     SchedMenuSettings.scheduleTime_afterMidnight = tempTime;
+    Serial.print("Sched Time: ");
+    Serial.println(SchedMenuSettings.scheduleTime_afterMidnight);
+    
     
 
     switch (currentZone)
@@ -370,12 +370,11 @@ void saveSchedMenu()
     }
 
     GM.m_zones[currentZone - 1]->name(SchedMenuSettings.name);
-    GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->dryThreshold(SchedMenuSettings.dryThresh);
     GM.m_zones[currentZone - 1]->wetThreshold(SchedMenuSettings.wetThresh);
-    GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
-    GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
     GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
+    GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
+    GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
     GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
 

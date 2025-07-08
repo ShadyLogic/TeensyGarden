@@ -61,11 +61,9 @@ void GardenManager::maintain()
         }
         m_zones[i]->handleSchedule();
     }
-    if (now() == previousMidnight(now())) 
+    if (now() == previousMidnight(now()) + (SECS_PER_HOUR * 15) + (SECS_PER_MIN * 10)) 
     {
-        
-        EEPROM.put(OFFSET_STOREEE, StoreEE);
-        MH.serPtr()->println("*** MIDNIGHT: Settings Saved");
+        saveAllZones();
         delay(1000);
     }
 }
@@ -85,6 +83,7 @@ void GardenManager::saveAllZones()
                 StoreEE.zone1durationToWater_min = m_zones[i]->durationToWater_min();
                 StoreEE.zone1scheduleMode = m_zones[i]->schedMode();
                 StoreEE.zone1lastWaterTime = m_zones[i]->lastWaterTime();
+                StoreEE.zone1scheduleTime_afterMidnight = m_zones[i]->scheduleTime_afterMidnight();
                 break;
             }
             case 2:
@@ -96,6 +95,7 @@ void GardenManager::saveAllZones()
                 StoreEE.zone2durationToWater_min = m_zones[i]->durationToWater_min();
                 StoreEE.zone2scheduleMode = m_zones[i]->schedMode();
                 StoreEE.zone2lastWaterTime = m_zones[i]->lastWaterTime();
+                StoreEE.zone2scheduleTime_afterMidnight = m_zones[i]->scheduleTime_afterMidnight();
                 break;
             }
             case 3:
@@ -107,6 +107,7 @@ void GardenManager::saveAllZones()
                 StoreEE.zone3durationToWater_min = m_zones[i]->durationToWater_min();
                 StoreEE.zone3scheduleMode = m_zones[i]->schedMode();
                 StoreEE.zone3lastWaterTime = m_zones[i]->lastWaterTime();
+                StoreEE.zone3scheduleTime_afterMidnight = m_zones[i]->scheduleTime_afterMidnight();
                 break;
             }
             case 4:
@@ -118,10 +119,15 @@ void GardenManager::saveAllZones()
                 StoreEE.zone4durationToWater_min = m_zones[i]->durationToWater_min();
                 StoreEE.zone4scheduleMode = m_zones[i]->schedMode();
                 StoreEE.zone4lastWaterTime = m_zones[i]->lastWaterTime();
+                StoreEE.zone4scheduleTime_afterMidnight = m_zones[i]->scheduleTime_afterMidnight();
                 break;
             }
         }
     }
+    EEPROM.put(OFFSET_STOREEE, StoreEE);
+    MH.serPtr()->print("*** Settings Auto-Saved at ");
+    digitalClockDisplay(now());
+    MH.serPtr()->println(" ***");
 }
 
 // ********   Z O N E   M E T H O D S   ********
@@ -261,6 +267,12 @@ void Zone::handleSchedInterval()
 
 void Zone::handleSchedSensor()
 {
+    if (moisture() >= m_wetThreshold)
+    {
+        if (now() > (m_lastWaterTime + (SECS_PER_MIN * m_durationToWater_min * 2))) m_lastWaterTime = now();
+        return;
+    }
+
     if (moisture() > m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
@@ -269,15 +281,17 @@ void Zone::handleSchedSensor()
     MH.serPtr()->print(" for ");
     MH.serPtr()->print(m_durationToWater_min);
     MH.serPtr()->println(" min");
+    lastWaterTime(now());
 }
 
 void Zone::handleSchedIntervalSensor()
 {
     if (moisture() >= m_wetThreshold)
     {
-        if (now() < (m_lastWaterTime + (SECS_PER_HOUR * 4))) m_lastWaterTime = now();
+        if (now() > (m_lastWaterTime + (SECS_PER_MIN * m_durationToWater_min * 2))) m_lastWaterTime = now();
         return;
     }
+
     if (now() < m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
