@@ -303,7 +303,7 @@ void saveSchedMenu()
     time_t tempTime = 0;
 
     tempTime += (time_t)(schedMenuTime[0] - '0') * (SECS_PER_HOUR * 10 * (schedMenuTime[1] != '2'));
-    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR * (schedMenuTime[1] != '2' || schedMenuTime[1] != 1);
+    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR * (schedMenuTime[1] != '2' || schedMenuTime[0] != 1);
     tempTime += (time_t)(schedMenuTime[3] - '0') * (SECS_PER_MIN * 10);
     tempTime += (time_t)(schedMenuTime[4] - '0') * SECS_PER_MIN;
     if (toUpperCase(schedMenuTime[5]) == 'P') tempTime += (SECS_PER_HOUR * 12);
