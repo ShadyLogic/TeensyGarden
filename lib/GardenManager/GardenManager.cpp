@@ -61,7 +61,7 @@ void GardenManager::maintain()
         }
         m_zones[i]->handleSchedule();
     }
-    if (now() == previousMidnight(now()) + (SECS_PER_HOUR * 15) + (SECS_PER_MIN * 10)) 
+    if (now() == previousMidnight(now()) + (SECS_PER_HOUR * 12)) 
     {
         saveAllZones();
         delay(1000);
@@ -175,12 +175,21 @@ void Zone::printStatus(Stream* output)
     MH.serPtr()->print(m_zoneName);
     MH.serPtr()->print(" - Mode: ");
     MH.serPtr()->println(SchedModeToString(m_schedMode));
-    MH.serPtr()->print("Dry: ");
-    MH.serPtr()->print(m_dryThreshold);
-    MH.serPtr()->print(" | Wet: ");
-    MH.serPtr()->println(m_wetThreshold);
-    MH.serPtr()->print("Moisture Level: ");
-    MH.serPtr()->println(moisture());
+    if (m_schedMode == INTERVAL || m_schedMode == INTERVAL_SENSOR)
+    {
+        MH.serPtr()->print("Watering every ");
+        MH.serPtr()->print(m_timeBetweenWatering_hr);
+        MH.serPtr()->println(" hrs");
+    }
+    if (m_schedMode == SENSOR || m_schedMode == INTERVAL_SENSOR)
+    {
+        MH.serPtr()->print("Dry: ");
+        MH.serPtr()->print(m_dryThreshold);
+        MH.serPtr()->print(" | Wet: ");
+        MH.serPtr()->println(m_wetThreshold);
+        MH.serPtr()->print("Moisture Level: ");
+        MH.serPtr()->println(moisture());
+    }
     MH.serPtr()->print("Valve is ");
     digitalRead(m_valvePin1) ? MH.serPtr()->print("\033[1;32mOPEN\033[0m") : MH.serPtr()->print("\033[1;31mCLOSED\033[0m");
     if (m_valveTimerRunning)
@@ -192,13 +201,20 @@ void Zone::printStatus(Stream* output)
         if (hourTime > 0) {MH.serPtr()->print(hourTime); MH.serPtr()->print("h");}
         if (minTime > 0) {MH.serPtr()->print(minTime); MH.serPtr()->print("m");}
         if (secTime > 0) {MH.serPtr()->print(secTime); MH.serPtr()->print("s");}
+        MH.serPtr()->println();
     }
     else
     {
-        MH.serPtr()->print("\nLast Watered @ ");
+        MH.serPtr()->print("\nLast Water @ ");
         digitalClockDisplay(m_lastWaterTime);
+        MH.serPtr()->println();
+        if (m_schedMode == INTERVAL || m_schedMode == INTERVAL_SENSOR)
+        {
+            MH.serPtr()->print("Next Water @ ");
+            digitalClockDisplay(m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr));
+            MH.serPtr()->println();
+        }
     }
-    MH.serPtr()->println();
 }
 
 void Zone::handleSchedule()
@@ -269,7 +285,7 @@ void Zone::handleSchedSensor()
 {
     if (moisture() >= m_wetThreshold)
     {
-        if (now() > (m_lastWaterTime + (SECS_PER_MIN * m_durationToWater_min * 2))) m_lastWaterTime = now();
+        if (now() > (m_lastWaterTime + (SECS_PER_MIN * (m_durationToWater_min + 1)))) m_lastWaterTime = now();
         return;
     }
 
@@ -288,7 +304,7 @@ void Zone::handleSchedIntervalSensor()
 {
     if (moisture() >= m_wetThreshold)
     {
-        if (now() > (m_lastWaterTime + (SECS_PER_MIN * m_durationToWater_min * 2))) m_lastWaterTime = now();
+        if (now() > (m_lastWaterTime + (SECS_PER_MIN * (m_durationToWater_min + 1)))) m_lastWaterTime = now();
         return;
     }
 
@@ -426,4 +442,33 @@ String SchedModeToString(ScheduleMode mode)
     }
     
     return "ERROR";
+}
+
+time_t arrayToTime(char timeArray[8])
+{
+    time_t tempTime = 0;
+
+    tempTime += (time_t)(timeArray[0] - '0') * (SECS_PER_HOUR * 10);
+    tempTime += (time_t)(timeArray[1] - '0') * SECS_PER_HOUR;
+    if (timeArray[0] == '1' && timeArray[1] == '2') tempTime = 0;
+    tempTime += (time_t)(timeArray[3] - '0') * (SECS_PER_MIN * 10);
+    tempTime += (time_t)(timeArray[4] - '0') * SECS_PER_MIN;
+    if (toUpperCase(timeArray[5]) == 'P') tempTime += (SECS_PER_HOUR * 12);
+    tempTime = tempTime % SECS_PER_DAY;
+    return tempTime;
+}
+
+void timeToArray(time_t time, char* destArray)
+{
+    int tempHour = hour(time);
+    if (tempHour > 12) tempHour = tempHour-12;
+    if (tempHour == 0) tempHour = 12;
+    itoa(tempHour, destArray, DEC);
+    if (destArray[1] == '\0') {destArray[1] = destArray[0]; destArray[0] = '0';}
+    destArray[2] = ':';
+    itoa(minute(time), &destArray[3], DEC);
+    if (destArray[4] == '\0') {destArray[4] = destArray[3]; destArray[3] = '0';}
+    hour(time) >= 12 ? destArray[5] = 'P' : destArray[5] = 'A';
+    destArray[6] = 'M';
+    destArray[7] = '\0';
 }

@@ -26,11 +26,12 @@
 char currentTime[20] = "10:00 05/15/2025";
 
 Maltbie_Helper MH;
+
 MenuManager MM;
-Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
+Menu MainMenu("**** TEENSY GARDEN MENU ****");
 
 MenuManager SchedMan;
-Menu SchedMenu("**** Schedule Manager ****");
+Menu SchedMenu("**** SCHEDULE MANAGER ****");
 
 struct ZoneSettings
 {
@@ -81,6 +82,8 @@ time_t  lastTime;
 bool    funkyLights = false;
 bool    PWMtest     = false;
 
+void bitwiseTest();
+void saveAllZoneInfo();
 
 void setup() 
 {
@@ -96,13 +99,15 @@ void setup()
     SchedMan.registerMenu(&SchedMenu);
 
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
-    MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
+    MainMenu.addOption('B', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
     MainMenu.addOption('G', "Valve Run Timer (Valve#-Min)", inputBuffer, setValveRunTime);
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
-    MainMenu.addOption('!', "Schedule Menu", handleScheduleMenu);
+    MainMenu.addOption('!', "SCHEDULE MENU", handleScheduleMenu);
+    MainMenu.addOption('C', "Bitwise Test", bitwiseTest);
+    MainMenu.addOption('*', "Save All Zone Info", saveAllZoneInfo);
 
     SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
     SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
@@ -113,7 +118,7 @@ void setup()
     SchedMenu.addOption('G', "Time Between Watering", &SchedMenuSettings.timeBetweenWatering_hr, 255, 0);
     SchedMenu.addOption('I', "Scheduled Time", schedMenuTime);
     SchedMenu.addOption('+', "Save Zone Settings", saveSchedMenu);
-    SchedMenu.addOption('!', "EXIT SCHEDULE MENU", exitScheduleMenu);
+    SchedMenu.addOption('!', "MAIN MENU", exitScheduleMenu);
 
     GM.addZone(&zone1);
     GM.addZone(&zone2);
@@ -178,7 +183,7 @@ void setup()
 
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 
-    updateSchedMenu();
+    // updateSchedMenu();
 }
 
 void loop(){
@@ -282,38 +287,16 @@ void updateSchedMenu()
     SchedMenuSettings.scheduleTime_afterMidnight = GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight();
     memcpy(SchedMenuSettings.scheduleDOWday, GM.m_zones[currentZone - 1]->schedDOWday(), sizeof(SchedMenuSettings.scheduleDOWday));
 
-    int tempHour = hour(SchedMenuSettings.scheduleTime_afterMidnight);
-    if (tempHour > 12) tempHour = tempHour-12;
-    if (tempHour == 0) tempHour = 12;
-    itoa(tempHour, schedMenuTime, DEC);
-    if (schedMenuTime[1] == '\0') {schedMenuTime[1] = schedMenuTime[0]; schedMenuTime[0] = '0';}
-    schedMenuTime[2] = ':';
-    itoa(minute(SchedMenuSettings.scheduleTime_afterMidnight), &schedMenuTime[3], DEC);
-    if (schedMenuTime[4] == '\0') {schedMenuTime[4] = schedMenuTime[3]; schedMenuTime[3] = '0';}
-    hour(SchedMenuSettings.scheduleTime_afterMidnight) >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
-    schedMenuTime[6] = 'M';
-    schedMenuTime[7] = '\0';
-    Serial.println("\n");
+    timeToArray(SchedMenuSettings.scheduleTime_afterMidnight, schedMenuTime);
 
+    Serial.println("\n");
     SchedMan.printMenu();
 }
 
 void saveSchedMenu()
 {
-    time_t tempTime = 0;
-
-    tempTime += (time_t)(schedMenuTime[0] - '0') * (SECS_PER_HOUR * 10 * (schedMenuTime[1] != '2'));
-    tempTime += (time_t)(schedMenuTime[1] - '0') * SECS_PER_HOUR * (schedMenuTime[1] != '2' || schedMenuTime[0] != 1);
-    tempTime += (time_t)(schedMenuTime[3] - '0') * (SECS_PER_MIN * 10);
-    tempTime += (time_t)(schedMenuTime[4] - '0') * SECS_PER_MIN;
-    if (toUpperCase(schedMenuTime[5]) == 'P') tempTime += (SECS_PER_HOUR * 12);
-    tempTime = tempTime % SECS_PER_DAY;
-    SchedMenuSettings.scheduleTime_afterMidnight = tempTime;
-    Serial.print("Sched Time: ");
-    Serial.println(SchedMenuSettings.scheduleTime_afterMidnight);
+    SchedMenuSettings.scheduleTime_afterMidnight = arrayToTime(schedMenuTime);
     
-    
-
     switch (currentZone)
     {
         case 1:
@@ -372,7 +355,7 @@ void saveSchedMenu()
     GM.m_zones[currentZone - 1]->name(SchedMenuSettings.name);
     GM.m_zones[currentZone - 1]->dryThreshold(SchedMenuSettings.dryThresh);
     GM.m_zones[currentZone - 1]->wetThreshold(SchedMenuSettings.wetThresh);
-    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
+    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr(SchedMenuSettings.timeBetweenWatering_hr);
     GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
     GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
@@ -383,4 +366,37 @@ void saveSchedMenu()
     EEPROM.put(OFFSET_STOREEE, StoreEE);
     MH.serPtr()->print("Settings saved for ");
     MH.serPtr()->println(SchedMenuSettings.name);
+}
+
+void bitwiseTest()
+{
+    uint8_t unit    = 0b01010101;
+    uint8_t key1    = 0b00000001;
+    uint8_t key2    = 0b00000010;
+    uint8_t key3    = 0b00000100;
+    uint8_t key4    = 0b00001000;
+    uint8_t key5    = 0b00010000;
+    uint8_t key6    = 0b00100000;
+    uint8_t key7    = 0b01000000;
+    uint8_t key8    = 0b10000000;
+    uint8_t key9    = 0b10101010;
+    uint8_t keyx    = 0b01010101;
+
+    Serial.println("Test is: 0b01010101");
+
+    if(unit & key1) {Serial.println("1 is SET!");}
+    if(unit & key2) {Serial.println("2 is SET!");}
+    if(unit & key3) {Serial.println("3 is SET!");}
+    if(unit & key4) {Serial.println("4 is SET!");}
+    if(unit & key5) {Serial.println("5 is SET!");}
+    if(unit & key6) {Serial.println("6 is SET!");}
+    if(unit & key7) {Serial.println("7 is SET!");}
+    if(unit & key8) {Serial.println("8 is SET!");}
+    if(unit & key9) {Serial.println("NO is SET!");}
+    if(unit & keyx) {Serial.println("YES is SET!");}
+}
+
+void saveAllZoneInfo()
+{
+    GM.saveAllZones();
 }

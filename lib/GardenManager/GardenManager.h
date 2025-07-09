@@ -28,6 +28,8 @@ void            print12Hour(int digits);
 ScheduleMode    intToSchedMode(int number);
 uint8_t         SchedModeToInt(ScheduleMode mode);
 String          SchedModeToString(ScheduleMode mode);
+time_t          arrayToTime(char timeArray[8]);
+void            timeToArray(time_t time, char* destArray);
 
 
 
@@ -45,8 +47,8 @@ public:
     time_t          lastWaterTime(void)                         {return m_lastWaterTime;}
     void            lastWaterTime(time_t newTime)               {m_lastWaterTime = newTime;}
 
-    time_t          timeBetweenWatering_hr(void)                {return m_timeBetweenWatering_hr;}
-    void            timeBetweenWatering_hr(time_t newTBW)       {m_timeBetweenWatering_hr = newTBW;}
+    uint8_t         timeBetweenWatering_hr(void)                {return m_timeBetweenWatering_hr;}
+    void            timeBetweenWatering_hr(uint8_t newTBW)      {m_timeBetweenWatering_hr = newTBW;}
 
     time_t          timeToTurnOffValve()                        {return m_timeToTurnOffValve;}
     void            timeToTurnOffValve(time_t);
@@ -91,7 +93,7 @@ private:
     time_t          m_nextWaterTime;
     time_t          m_lastWaterTime;
     time_t          m_timeToTurnOffValve;
-    time_t          m_timeBetweenWatering_hr;
+    uint8_t         m_timeBetweenWatering_hr;
     uint8_t         m_durationToWater_min;
     bool            m_valveTimerRunning;
     uint8_t         m_valvePin1;
