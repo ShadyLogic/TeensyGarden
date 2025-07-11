@@ -1,3 +1,25 @@
+/*
+ * main.cpp
+ * 
+ * Teensy Garden Irrigation System
+ * 
+ * Description:
+ * This is the entry point for the Teensy 4.1-based garden irrigation controller.
+ * It initializes menus, sets up real-time clock syncing, loads saved zone configurations,
+ * and enters the main control loop that maintains irrigation zones and handles user interaction.
+ *
+ * Features:
+ * - BLE/Serial menu interface
+ * - RTC synchronization
+ * - EEPROM loading/saving of zone settings
+ * - Manual and automatic valve control
+ * - Soil moisture monitoring and scheduling
+ * 
+ * Author: Jacob Rogers
+ * Date: May 2025
+ */
+
+
 #include <Arduino.h>
 #include <Maltbie_Menu.h>
 #include <Maltbie_Timer.h>

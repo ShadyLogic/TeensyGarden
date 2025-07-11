@@ -1,5 +1,27 @@
-// Garden Manager
-// Jacob Rogers
+/*
+ * GardenManager.h
+ * 
+ * GardenManager and Zone class definitions for the Teensy-based irrigation system.
+ * 
+ * GardenManager:
+ *  - Holds and manages up to 4 irrigation zones
+ *  - Oversees scheduled valve operation and data persistence
+ *
+ * Zone:
+ *  - Represents a single garden irrigation area
+ *  - Manages its own valve, soil moisture sensor, and watering schedule
+ *  - Supports several scheduling modes (NONE, DOW, INTERVAL, SENSOR, INTERVAL_SENSOR)
+ *
+ * Dependencies:
+ * - TimeLib
+ * - SD
+ * - EEPROM
+ * - Maltbie_Helper / Menu_Config
+ * 
+ * Author: Jacob Rogers
+ * Date: May 2025
+ */
+
 
 #ifndef GARDEN_MANAGER_H
 #define GARDEN_MANAGER_H

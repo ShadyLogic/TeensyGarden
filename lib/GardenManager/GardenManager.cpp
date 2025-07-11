@@ -1,5 +1,24 @@
-// Garden Manager
-// Jacob Rogers
+/*
+ * GardenManager.cpp
+ * 
+ * Implements the logic for the Teensy Garden Irrigation System.
+ * 
+ * This file defines the behavior for the GardenManager and Zone classes:
+ * - Valve timing and moisture-based watering logic
+ * - Schedule handling for various modes (DOW, INTERVAL, SENSOR, INTERVAL_SENSOR)
+ * - Zone initialization and real-time control
+ * - Logging to SD card and EEPROM persistence
+ * - Human-readable status printing for monitoring
+ * 
+ * Key Functions:
+ * - GardenManager::maintain()      → Main control loop logic
+ * - Zone::handleSchedule()         → Applies scheduling logic per zone
+ * - logData(), printLog(), clearLog() → SD card logging utilities
+ *
+ * Author: Jacob Rogers
+ * Date: May 2025
+ */
+
 
 #include <GardenManager.h>
 
