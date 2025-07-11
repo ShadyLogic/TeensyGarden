@@ -262,9 +262,9 @@ void Zone::handleSchedDOW()
         openValve();
         timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
         String temp;
-        temp += ("Watering ");
+        temp += ("Opening ");
         temp += (m_zoneName);
-        temp += (" for ");
+        temp += (" valve for ");
         temp += (m_durationToWater_min);
         temp += " min";
         logData(temp);
@@ -277,9 +277,9 @@ void Zone::handleSchedInterval()
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     String temp;
-    temp += ("Watering ");
+    temp += ("Opening ");
     temp += (m_zoneName);
-    temp += (" for ");
+    temp += (" valve for ");
     temp += (m_durationToWater_min);
     temp += " min";
     logData(temp);
@@ -297,9 +297,9 @@ void Zone::handleSchedSensor()
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     String temp;
-    temp += ("Watering ");
+    temp += ("Opening ");
     temp += (m_zoneName);
-    temp += (" for ");
+    temp += (" valve for ");
     temp += (m_durationToWater_min);
     temp += " min";
     logData(temp);
@@ -317,9 +317,9 @@ void Zone::handleSchedIntervalSensor()
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     String temp;
-    temp += ("Watering ");
+    temp += ("Opening ");
     temp += (m_zoneName);
-    temp += (" for ");
+    temp += (" valve for ");
     temp += (m_durationToWater_min);
     temp += " min";
     logData(temp);
