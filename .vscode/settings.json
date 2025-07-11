@@ -3,6 +3,8 @@
         "typeinfo": "cpp",
         "numeric": "cpp",
         "ostream": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "string_view": "cpp",
+        "string": "cpp"
     }
 }

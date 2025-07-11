@@ -3,6 +3,8 @@
 
 #include <GardenManager.h>
 
+bool SDworking = false;
+
 
 // ********   G A R D E N   M A N A G E R   M E T H O D S   ********
 
@@ -53,9 +55,11 @@ void GardenManager::maintain()
         if (m_zones[i]->valveTimerRunning() && m_zones[i]->valveTimerExpired())
         {
             {
-                MH.serPtr()->print("Closing ");
-                MH.serPtr()->print(m_zones[i]->name());
-                MH.serPtr()->println(" valve");
+                String temp;
+                temp += "Closing ";
+                temp += String(m_zones[i]->name());
+                temp += " valve";
+                logData(temp);
                 m_zones[i]->closeValve();
             }
         }
@@ -125,9 +129,7 @@ void GardenManager::saveAllZones()
         }
     }
     EEPROM.put(OFFSET_STOREEE, StoreEE);
-    MH.serPtr()->print("*** Settings Auto-Saved at ");
-    digitalClockDisplay(now());
-    MH.serPtr()->println(" ***");
+    logData("*** Settings Auto-Saved ***");
 }
 
 // ********   Z O N E   M E T H O D S   ********
@@ -206,13 +208,11 @@ void Zone::printStatus(Stream* output)
     else
     {
         MH.serPtr()->print("\nLast Water @ ");
-        digitalClockDisplay(m_lastWaterTime);
-        MH.serPtr()->println();
+        MH.serPtr()->println(timeAndDate(m_lastWaterTime));
         if (m_schedMode == INTERVAL || m_schedMode == INTERVAL_SENSOR)
         {
             MH.serPtr()->print("Next Water @ ");
-            digitalClockDisplay(m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr));
-            MH.serPtr()->println();
+            MH.serPtr()->println(timeAndDate(m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)));
         }
     }
 }
@@ -261,11 +261,13 @@ void Zone::handleSchedDOW()
         MH.serPtr()->println(" running scheduled watering");
         openValve();
         timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
-        MH.serPtr()->print("Watering ");
-        MH.serPtr()->print(m_zoneName);
-        MH.serPtr()->print(" for ");
-        MH.serPtr()->print(m_durationToWater_min);
-        MH.serPtr()->println(" min");
+        String temp;
+        temp += ("Watering ");
+        temp += (m_zoneName);
+        temp += (" for ");
+        temp += (m_durationToWater_min);
+        temp += " min";
+        logData(temp);
     }
 }
 
@@ -274,11 +276,13 @@ void Zone::handleSchedInterval()
     if (now() < m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
-    MH.serPtr()->print("Watering ");
-    MH.serPtr()->print(m_zoneName);
-    MH.serPtr()->print(" for ");
-    MH.serPtr()->print(m_durationToWater_min);
-    MH.serPtr()->println(" min");
+    String temp;
+    temp += ("Watering ");
+    temp += (m_zoneName);
+    temp += (" for ");
+    temp += (m_durationToWater_min);
+    temp += " min";
+    logData(temp);
 }
 
 void Zone::handleSchedSensor()
@@ -292,12 +296,13 @@ void Zone::handleSchedSensor()
     if (moisture() > m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
-    MH.serPtr()->print("Watering ");
-    MH.serPtr()->print(m_zoneName);
-    MH.serPtr()->print(" for ");
-    MH.serPtr()->print(m_durationToWater_min);
-    MH.serPtr()->println(" min");
-    lastWaterTime(now());
+    String temp;
+    temp += ("Watering ");
+    temp += (m_zoneName);
+    temp += (" for ");
+    temp += (m_durationToWater_min);
+    temp += " min";
+    logData(temp);
 }
 
 void Zone::handleSchedIntervalSensor()
@@ -311,11 +316,13 @@ void Zone::handleSchedIntervalSensor()
     if (now() < m_lastWaterTime + (SECS_PER_HOUR * m_timeBetweenWatering_hr)) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
-    MH.serPtr()->print("Watering ");
-    MH.serPtr()->print(m_zoneName);
-    MH.serPtr()->print(" for ");
-    MH.serPtr()->print(m_durationToWater_min);
-    MH.serPtr()->println(" min");
+    String temp;
+    temp += ("Watering ");
+    temp += (m_zoneName);
+    temp += (" for ");
+    temp += (m_durationToWater_min);
+    temp += " min";
+    logData(temp);
 }
 
 void Zone::setScheduleDOW(time_t time)
@@ -370,44 +377,47 @@ String numberToDay(int number)
     }
 }
 
-void digitalClockDisplay(time_t time){
-    // digital clock display of the time
-    print12Hour(hour(time));
-    printDigits(minute(time));
-    // printDigits(second(time));
-    if (hour(time) >= 12)
-    {
-        MH.serPtr()->print("PM,");
-    }
-    else
-    {
-        MH.serPtr()->print("AM,");
-    }
-    MH.serPtr()->print(" ");
-    MH.serPtr()->print(month(time));
-    MH.serPtr()->print("/");
-    MH.serPtr()->print(day(time));
-    MH.serPtr()->print("/");
-    MH.serPtr()->print(year(time)); 
+String timeAndDate(time_t time){
+    String rc;
+    rc += timeToString(time);
+    rc += " ";
+    rc += timeToDate(time);
+
+    return rc;
 }
 
-void printDigits(int digits){
-    // utility function for digital clock display: prints preceding colon and leading 0
-    MH.serPtr()->print(":");
+String dateAndTime(time_t time){
+    String rc;
+    rc += timeToDate(time);
+    rc += " ";
+    rc += timeToString(time);
+
+    return rc;
+}
+
+String printDigits(int digits){
+    String rc;
     if(digits < 10)
-        MH.serPtr()->print('0');
-    MH.serPtr()->print(digits);
+    {
+        rc += "0";
+        rc += String(digits);
+        return rc;
+    }
+    rc += String(digits);
+    return rc;
 }
 
-void print12Hour(int digits){
+String print12Hour(int digits){
+    String rc;
     int theHour = digits % 12;
     if (theHour == 0)
     {
-        MH.serPtr()->print(12);
+        return "12";
     }
     else
     {
-        MH.serPtr()->print(theHour);
+        rc += String(theHour);
+        return rc;
     }
 }
 
@@ -458,17 +468,89 @@ time_t arrayToTime(char timeArray[8])
     return tempTime;
 }
 
-void timeToArray(time_t time, char* destArray)
+String timeToString(time_t time)
 {
-    int tempHour = hour(time);
-    if (tempHour > 12) tempHour = tempHour-12;
-    if (tempHour == 0) tempHour = 12;
-    itoa(tempHour, destArray, DEC);
-    if (destArray[1] == '\0') {destArray[1] = destArray[0]; destArray[0] = '0';}
-    destArray[2] = ':';
-    itoa(minute(time), &destArray[3], DEC);
-    if (destArray[4] == '\0') {destArray[4] = destArray[3]; destArray[3] = '0';}
-    hour(time) >= 12 ? destArray[5] = 'P' : destArray[5] = 'A';
-    destArray[6] = 'M';
-    destArray[7] = '\0';
+    String rc;
+    rc += print12Hour(hour(time));
+    rc += ':';
+    rc += printDigits(minute(time));
+    hour(time) >= 12 ? rc += "PM" : rc += "AM";
+    return rc;
+}
+
+String timeToDate(time_t time)
+{
+    String rc;
+    rc += String(month(time));
+    rc += "/";
+    rc += String(day(time));
+    rc += "/";
+    rc += String(year(time));
+    return rc;
+}
+
+void logData(String data)
+{
+    if (!SDworking) 
+    {
+        MH.serPtr()->println("*** SD Card failed to initialize ***\n");
+        MH.serPtr()->println(data);
+        return;
+    }
+
+    File dataFile = SD.open("log.txt", FILE_WRITE);
+
+    if (dataFile) 
+    {
+        dataFile.print(dateAndTime(now()));
+        dataFile.print(" - ");
+        dataFile.println(data);
+        dataFile.close();
+
+        MH.serPtr()->println(data);
+    } 
+    else 
+    {
+        MH.serPtr()->println("*** Error opening log.txt ***");
+    }
+}
+
+void printLog()
+{
+    File dataFile = SD.open("log.txt");
+    if (dataFile) 
+    {
+        while (dataFile.available()) 
+        {
+            MH.serPtr()->write(dataFile.read());
+        }
+        dataFile.close();
+    } 
+    else 
+    {
+        MH.serPtr()->println("*** Error opening log.txt ***");
+    }
+}
+
+void clearLog()
+{
+    if (!SD.remove("log.txt")) 
+    {
+        MH.serPtr()->println("*** ERROR DELETING LOG ***");
+    }
+    else
+    {
+        MH.serPtr()->println("*** LOG CLEARED ***");
+    }
+
+    File dataFile = SD.open("log.txt", FILE_WRITE);
+    if (dataFile) 
+    {
+        dataFile.println("              >>>>>> TEENSY GARDEN LOG <<<<<<\n");
+        dataFile.close();
+    } 
+    else 
+    {
+        MH.serPtr()->println("*** ERROR CREATING NEW LOG ***");
+    }
 }

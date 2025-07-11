@@ -10,6 +10,8 @@
 #include <Maltbie_Helper.h>
 #include <Menu_Config.h>
 #include <TimeLib.h>
+#include <SD.h>
+#include <SPI.h>
 
 enum ScheduleMode
 {
@@ -22,14 +24,20 @@ enum ScheduleMode
 
 
 String          numberToDay(int);
-void            printDigits(int digits);
-void            digitalClockDisplay(time_t time);
-void            print12Hour(int digits);
 ScheduleMode    intToSchedMode(int number);
 uint8_t         SchedModeToInt(ScheduleMode mode);
 String          SchedModeToString(ScheduleMode mode);
 time_t          arrayToTime(char timeArray[8]);
-void            timeToArray(time_t time, char* destArray);
+String          printDigits(int digits);
+String          print12Hour(int digits);
+String          timeToString(time_t time);
+String          timeToDate(time_t time);
+String          timeAndDate(time_t time);
+String          dateAndTime(time_t time);
+void            logData(String);
+void            printLog();
+void            clearLog();
+extern bool     SDworking;
 
 
 
