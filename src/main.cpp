@@ -253,7 +253,7 @@ void setValveRunTime()
     Zone* tempZone = GM.valveRunTime(zone-1, runTime);
     String temp;
     temp += String(tempZone->name());
-    temp += (" valve will turn off at ");
+    temp += (" valve will close at ");
     temp += String(timeToString(tempZone->timeToTurnOffValve()));
     logData(temp);
     memset(inputBuffer, '\0', sizeof(inputBuffer));
