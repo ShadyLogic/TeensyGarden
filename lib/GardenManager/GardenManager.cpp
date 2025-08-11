@@ -306,13 +306,13 @@ void Zone::handleSchedInterval()
 
 void Zone::handleSchedSensor()
 {
-    if (moisture() >= m_wetThreshold)
+    if (moisture() <= m_wetThreshold)
     {
         if (now() > (m_lastWaterTime + (SECS_PER_MIN * (m_durationToWater_min + 1)))) m_lastWaterTime = now();
         return;
     }
 
-    if (moisture() > m_dryThreshold) return;
+    if (moisture() < m_dryThreshold) return;
     openValve();
     timeToTurnOffValve(now() + (SECS_PER_MIN * m_durationToWater_min));
     String temp;
@@ -326,7 +326,7 @@ void Zone::handleSchedSensor()
 
 void Zone::handleSchedIntervalSensor()
 {
-    if (moisture() >= m_wetThreshold)
+    if (moisture() <= m_wetThreshold)
     {
         if (now() > (m_lastWaterTime + (SECS_PER_MIN * (m_durationToWater_min + 1)))) m_lastWaterTime = now();
         return;
