@@ -92,9 +92,9 @@ MenuOption::MenuOption(char comChar, String desc, void *data, bool flag)
     m_Function      =   &unassignedCommand;
 }
 
-Menu::Menu(String title)
+Menu::Menu(char* title)
 {
-    m_title = title; 
+    strncpy(m_title, title, sizeof(m_title)); 
     m_numOptions = 0;
 }
 

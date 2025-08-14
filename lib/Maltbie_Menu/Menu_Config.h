@@ -9,7 +9,7 @@
 #endif
 
 //////////   EXHIBIT NAME   //////////
-#define EXHIBIT_NAME_VERSION    "Teensy Garden 1.2"
+#define EXHIBIT_NAME_VERSION    "Teensy Garden 1.3"
 
 //////////   BLE DEVICE INFO   //////////
 #define THIS_DEVICE_NAME     "TeensyGarden"
@@ -32,7 +32,7 @@
  
 #define EEPROM_VALID_PAT1   0xAA
 #define EEPROM_VALID_PAT2   0x55
-#define EEPROM_END_VER_SIG  0x0102
+#define EEPROM_END_VER_SIG  0x0103
 struct EEPROM_Struct
 {
     uint8_t     eeValid_1;      // EE is Valid_1: 0xAA

@@ -124,7 +124,7 @@ private:
 
 class Menu {
 public:
-    Menu(String title);
+    Menu(char* title);
     void printTitle(Stream *serialPtr = MH.serPtr()) {serialPtr->println(m_title);}
     void printOptions(Stream *serialPtr = MH.serPtr());
     void dumpConfig(Stream *serialPtr = MH.serPtr());
@@ -137,13 +137,13 @@ public:
     MenuOption* addOption(char comChar, String desc, void (*f)() = NULL);
     MenuOption* addOption(char comChar, String desc, void *data, bool flag = true);
     MenuOption* addOption(MenuOption op);
-    void updateTitle(String newTitle) {m_title = newTitle;}
+    void updateTitle(char* newTitle) {strncpy(m_title, newTitle, sizeof(m_title));}
     bool comCharAvailable(char comChar);
     MenuOption GetOptionByComChar(char comChar);
     MenuOption m_options[MENU_MAX_OPTIONS];
 private:
     friend class MenuManager;
-    String m_title;
+    char m_title[MAX_CHAR];
     uint8_t m_numOptions;
 };
 

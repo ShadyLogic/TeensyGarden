@@ -23,11 +23,11 @@
 
 #define TIME_HEADER  "T"   // Header tag for serial time sync message
 #define TIME_REQUEST  7    // ASCII bell character requests a time sync message
-char currentTime[20] = "10:00 05/15/2025";
+char currentTime[MAX_CHAR] = "10:00 05/15/2025";
 
 Maltbie_Helper MH;
 MenuManager MM;
-Menu MainMenu("**** Welcome to the Teensy Garden Menu ****");
+Menu MainMenu("**** Teensy Garden Menu ****");
 
 MenuManager SchedMan;
 Menu SchedMenu("**** Schedule Manager ****");
@@ -74,8 +74,8 @@ void    handleScheduleMenu(void);
 void    updateSchedMenu(void);
 void    saveSchedMenu(void);
 void    exitScheduleMenu(void)     {exitSchedMenu = true;}
-char    schedMenuTime[8] = "12:00PM";
-char    schedMenuMode[9] = "NONE";
+char    schedMenuTime[MAX_CHAR] = "12:00PM";
+char    schedMenuMode[MAX_CHAR] = "NONE";
 Timer_ms schedMenuTimeout;
 
 time_t  lastTime;
