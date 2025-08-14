@@ -73,7 +73,6 @@ struct EEPROM_Struct
     uint8_t     zone4durationToWater_min;
     double      zone4lastWaterTime;
     double      zone4scheduleTime_afterMidnight;
-    
 //                                                  //
 //////////////////////////////////////////////////////
     uint16_t    eeVersion;  // Change this if the eeprom layout changes

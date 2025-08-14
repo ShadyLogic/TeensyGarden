@@ -587,7 +587,7 @@ void MenuManager::printHelp(Stream *serialPtr, bool handleUsbOnlyOptions)
 #if ENABLE_BLE
    if (isConfigEEPromMismatch(0, (uint8_t *)&StoreEE_BLE, sizeof(StoreEE_BLE)))
    {
-       serialPtr->println(F("BlueTooth Changes Not Saved to EEPROM! (Enter \"(\")"));
+       serialPtr->println(F("BlueTooth Changes Not Saved to EEPROM! (Enter \"$\")"));
    }
 #endif //ENABLE_BLE
 }

@@ -1,10 +1,29 @@
+/*
+ * main.cpp
+ * 
+ * Teensy Garden Irrigation System
+ * 
+ * Description:
+ * This is the entry point for the Teensy 4.1-based garden irrigation controller.
+ * It initializes menus, sets up real-time clock syncing, loads saved zone configurations,
+ * and enters the main control loop that maintains irrigation zones and handles user interaction.
+ *
+ * Features:
+ * - BLE/Serial menu interface
+ * - RTC synchronization
+ * - EEPROM loading/saving of zone settings
+ * - Manual and automatic valve control
+ * - Soil moisture monitoring and scheduling
+ * 
+ * Author: Jacob Rogers
+ * Date: May 2025
+ */
+
+
+#include <Arduino.h>
 #include <Maltbie_Menu.h>
 #include <Maltbie_Timer.h>
-
-// #include <mcurses.h>
-
 #include <TimeLib.h>
-
 #include <GardenManager.h>
 
 #define ZONE1_SOLENOID_PIN_1    2
@@ -26,11 +45,12 @@
 char currentTime[MAX_CHAR] = "10:00 05/15/2025";
 
 Maltbie_Helper MH;
+
 MenuManager MM;
-Menu MainMenu("**** Teensy Garden Menu ****");
+Menu MainMenu("**** TEENSY GARDEN MENU ****");
 
 MenuManager SchedMan;
-Menu SchedMenu("**** Schedule Manager ****");
+Menu SchedMenu("**** SCHEDULE MANAGER ****");
 
 struct ZoneSettings
 {
@@ -46,42 +66,34 @@ struct ZoneSettings
 };
 ZoneSettings SchedMenuSettings;
 
-bool exitSchedMenu = false;
-uint8_t currentZone = 1;
-
 GardenManager GM;
-Zone zone1  (ZONE1_SENSOR_PIN,  ZONE1_SOLENOID_PIN_1,   ZONE1_SOLENOID_PIN_2);
-Zone zone2  (ZONE2_SENSOR_PIN,  ZONE2_SOLENOID_PIN_1,   ZONE2_SOLENOID_PIN_2);
-Zone zone3  (ZONE3_SENSOR_PIN,  ZONE3_SOLENOID_PIN_1,   ZONE3_SOLENOID_PIN_2);
-Zone zone4  (ZONE4_SENSOR_PIN,  ZONE4_SOLENOID_PIN_1,   ZONE4_SOLENOID_PIN_2);
+Zone        zone1   (ZONE1_SENSOR_PIN,  ZONE1_SOLENOID_PIN_1,   ZONE1_SOLENOID_PIN_2);
+Zone        zone2   (ZONE2_SENSOR_PIN,  ZONE2_SOLENOID_PIN_1,   ZONE2_SOLENOID_PIN_2);
+Zone        zone3   (ZONE3_SENSOR_PIN,  ZONE3_SOLENOID_PIN_1,   ZONE3_SOLENOID_PIN_2);
+Zone        zone4   (ZONE4_SENSOR_PIN,  ZONE4_SOLENOID_PIN_1,   ZONE4_SOLENOID_PIN_2);
 
-bool debugPrint = false;
-
+time_t      getTeensy3Time();
+void        digitalClockDisplayNow(void)    {MH.serPtr()->print(timeAndDate(now()));}
+void        printGardenStatus(void);
+void        setRTC(void);
+void        toggleValve(void);
+void        closeAllValves(void);
+void        openAllValves(void);
+void        setValveRunTime(void);
+void        saveAllZoneInfo();
+char        inputBuffer[15] = "0-0";
 Timer_ms    sensorTimer;
 uint8_t     menuValve = 0;
 
-time_t  getTeensy3Time();
-void    digitalClockDisplayNow(void) {digitalClockDisplay(now());}
-void    printGardenStatus(void);
-void    setRTC(void);
-void    toggleValve(void);
-void    closeAllValves(void);
-void    openAllValves(void);
-void    setValveRunTime(void);
-char    inputBuffer[15] = "0-0";
-
-void    handleScheduleMenu(void);
-void    updateSchedMenu(void);
-void    saveSchedMenu(void);
-void    exitScheduleMenu(void)     {exitSchedMenu = true;}
-char    schedMenuTime[MAX_CHAR] = "12:00PM";
-char    schedMenuMode[MAX_CHAR] = "NONE";
-Timer_ms schedMenuTimeout;
-
-time_t  lastTime;
-
-bool    funkyLights = false;
-bool    PWMtest     = false;
+bool        exitSchedMenu = false;
+void        handleScheduleMenu(void);
+void        updateSchedMenu(void);
+void        saveSchedMenu(void);
+void        exitScheduleMenu(void)          {exitSchedMenu = true;}
+char        schedMenuTime[8] = "12:00PM";
+char        schedMenuMode[9] = "NONE";
+Timer_ms    schedMenuTimeout;
+uint8_t     currentZone = 1;
 
 
 void setup() 
@@ -95,28 +107,42 @@ void setup()
 	MM.registerMenu(&MainMenu);
     MM.startWatchdog();
 
+    MH.serPtr()->print("\nInitializing SD Card...");
+    if (!SD.begin(BUILTIN_SDCARD)) 
+    {
+        MH.serPtr()->println("Card failed, or not present\n");
+        SDworking = false;
+    }
+    else
+    {
+        MH.serPtr()->println("Card initialized\n");
+        SDworking = true;
+    }
+
     SchedMan.registerMenu(&SchedMenu);
 
     MainMenu.addOption('A', "Print Garden Status", printGardenStatus);
-    MainMenu.addOption('B', "Show Debug Prints", &debugPrint);
-    MainMenu.addOption('C', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
+    MainMenu.addOption('B', "Set Time (HH:MM DD/MM/YYYY)", currentTime, setRTC);
     MainMenu.addOption('D', "Display Time", digitalClockDisplayNow);
     MainMenu.addOption('G', "Valve Run Timer (Valve#-Min)", inputBuffer, setValveRunTime);
     MainMenu.addOption('T', "Toggle Valve", &menuValve, 4, 1, toggleValve);
     MainMenu.addOption('+', "Open All Valves", openAllValves);
     MainMenu.addOption('-', "Close All Vavles", closeAllValves);
-    MainMenu.addOption('!', "Schedule Menu", handleScheduleMenu);
-
+    MainMenu.addOption('L', "Print Log Data", printLog);
+    MainMenu.addOption('K', "Clear Log Data", clearLog);
+    MainMenu.addOption('*', "Save All Zone Info", saveAllZoneInfo);
+    MainMenu.addOption('!', "SCHEDULE MENU", handleScheduleMenu);
+    
     SchedMenu.addOption('A', "Current Zone", &currentZone, 4, 1, updateSchedMenu);
     SchedMenu.addOption('B', "Zone Name", SchedMenuSettings.name);
     SchedMenu.addOption('C', "Schedule Mode", &SchedMenuSettings.schedMode, 4, 0);
-    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 511, 0);
-    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 511, 0);
+    SchedMenu.addOption('D', "Dry Threshold", &SchedMenuSettings.dryThresh, 1023, 0);
+    SchedMenu.addOption('E', "Wet Threshold", &SchedMenuSettings.wetThresh, 1023, 0);
     SchedMenu.addOption('F', "Duration To Water", &SchedMenuSettings.durationToWater_min, 255, 0);
     SchedMenu.addOption('G', "Time Between Watering", &SchedMenuSettings.timeBetweenWatering_hr, 255, 0);
     SchedMenu.addOption('I', "Scheduled Time", schedMenuTime);
     SchedMenu.addOption('+', "Save Zone Settings", saveSchedMenu);
-    SchedMenu.addOption('!', "EXIT SCHEDULE MENU", exitScheduleMenu);
+    SchedMenu.addOption('!', "MAIN MENU", exitScheduleMenu);
 
     GM.addZone(&zone1);
     GM.addZone(&zone2);
@@ -135,6 +161,7 @@ void setup()
     GM.m_zones[0]->durationToWater_min(StoreEE.zone1durationToWater_min);
     GM.m_zones[0]->schedMode(intToSchedMode(StoreEE.zone1scheduleMode));
     GM.m_zones[0]->lastWaterTime((time_t)StoreEE.zone1lastWaterTime);
+    GM.m_zones[0]->scheduleTime_afterMidnight((time_t)StoreEE.zone1scheduleTime_afterMidnight);
 
     GM.m_zones[1]->name(StoreEE.zone2name);
     GM.m_zones[1]->dryThreshold(StoreEE.zone2dryThreshold);
@@ -143,6 +170,7 @@ void setup()
     GM.m_zones[1]->durationToWater_min(StoreEE.zone2durationToWater_min);
     GM.m_zones[1]->schedMode(intToSchedMode(StoreEE.zone2scheduleMode));
     GM.m_zones[1]->lastWaterTime((time_t)StoreEE.zone2lastWaterTime);
+    GM.m_zones[1]->scheduleTime_afterMidnight((time_t)StoreEE.zone2scheduleTime_afterMidnight);
 
     GM.m_zones[2]->name(StoreEE.zone3name);
     GM.m_zones[2]->dryThreshold(StoreEE.zone3dryThreshold);
@@ -151,6 +179,7 @@ void setup()
     GM.m_zones[2]->durationToWater_min(StoreEE.zone3durationToWater_min);
     GM.m_zones[2]->schedMode(intToSchedMode(StoreEE.zone3scheduleMode));
     GM.m_zones[2]->lastWaterTime((time_t)StoreEE.zone3lastWaterTime);
+    GM.m_zones[2]->scheduleTime_afterMidnight((time_t)StoreEE.zone3scheduleTime_afterMidnight);
 
     GM.m_zones[3]->name(StoreEE.zone4name);
     GM.m_zones[3]->dryThreshold(StoreEE.zone4dryThreshold);
@@ -159,10 +188,7 @@ void setup()
     GM.m_zones[3]->durationToWater_min(StoreEE.zone4durationToWater_min);
     GM.m_zones[3]->schedMode(intToSchedMode(StoreEE.zone4scheduleMode));
     GM.m_zones[3]->lastWaterTime((time_t)StoreEE.zone4lastWaterTime);
-
-    MM.printHelp(&Serial, true);
-
-    WATCHDOG_RESET
+    GM.m_zones[3]->scheduleTime_afterMidnight((time_t)StoreEE.zone4scheduleTime_afterMidnight);
 
     digitalWrite(2, LOW);
     digitalWrite(3, LOW);
@@ -173,11 +199,9 @@ void setup()
     digitalWrite(8, LOW);
     digitalWrite(9, LOW);
 
-    lastTime = now();
-
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 
-    updateSchedMenu();
+    MM.printHelp(&Serial, true);
 }
 
 void loop(){
@@ -206,8 +230,7 @@ void setRTC()
     setTime(now());
 
     MH.serPtr()->print("NEW TIME: ");
-    digitalClockDisplayNow();
-    MH.serPtr()->println();
+    MH.serPtr()->println(timeAndDate(now()));
 }
 
 void printGardenStatus()
@@ -218,20 +241,24 @@ void printGardenStatus()
 void toggleValve()
 {
     GM.m_zones[menuValve-1]->valveIsOn() ? GM.m_zones[menuValve-1]->closeValve() : GM.m_zones[menuValve-1]->openValve();
-    MH.serPtr()->print(GM.m_zones[menuValve-1]->name());
-    MH.serPtr()->print(" Valve is now ");
-    GM.m_zones[menuValve-1]->valveIsOn() ? MH.serPtr()->println("ON") : MH.serPtr()->println("OFF");
+    String temp;
+    temp += String(GM.m_zones[menuValve-1]->name());
+    temp += (" valve is now ");
+    GM.m_zones[menuValve-1]->valveIsOn() ? temp += ("OPEN") : temp += ("CLOSED");
+    logData(temp);
     menuValve = 0;
 }
 
 void closeAllValves()
 {
     GM.closeAllValves();
+    logData("*** ALL VALVES CLOSED ***");
 }
 
 void openAllValves()
 {
     GM.openAllValves();
+    logData("*** ALL VALVES OPEN ***");
 }
 
 void setValveRunTime()
@@ -246,10 +273,11 @@ void setValveRunTime()
     strcpy(buffer, &inputBuffer[2]);
     int runTime = atoi(buffer);
     Zone* tempZone = GM.valveRunTime(zone-1, runTime);
-    MH.serPtr()->print(tempZone->name());
-    MH.serPtr()->print(" valve will turn off at ");
-    digitalClockDisplay(tempZone->timeToTurnOffValve());
-    MH.serPtr()->println();
+    String temp;
+    temp += String(tempZone->name());
+    temp += (" valve will close at ");
+    temp += String(timeToString(tempZone->timeToTurnOffValve()));
+    logData(temp);
     memset(inputBuffer, '\0', sizeof(inputBuffer));
 }
 
@@ -281,24 +309,16 @@ void updateSchedMenu()
     SchedMenuSettings.scheduleTime_afterMidnight = GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight();
     memcpy(SchedMenuSettings.scheduleDOWday, GM.m_zones[currentZone - 1]->schedDOWday(), sizeof(SchedMenuSettings.scheduleDOWday));
 
-    int tempHour = hour(SchedMenuSettings.scheduleTime_afterMidnight);
-    if (tempHour > 12) tempHour = tempHour-12;
-    if (tempHour == 0) tempHour = 12;
-    itoa(tempHour, schedMenuTime, DEC);
-    if (schedMenuTime[1] == '\0') {schedMenuTime[1] = schedMenuTime[0]; schedMenuTime[0] = '0';}
-    schedMenuTime[2] = ':';
-    itoa(minute(SchedMenuSettings.scheduleTime_afterMidnight), &schedMenuTime[3], DEC);
-    if (schedMenuTime[4] == '\0') {schedMenuTime[4] = schedMenuTime[3]; schedMenuTime[3] = '0';}
-    hour(SchedMenuSettings.scheduleTime_afterMidnight) >= 12 ? schedMenuTime[5] = 'P' : schedMenuTime[5] = 'A';
-    schedMenuTime[6] = 'M';
-    schedMenuTime[7] = '\0';
-    Serial.println("\n");
+    timeToString(SchedMenuSettings.scheduleTime_afterMidnight).toCharArray(schedMenuTime, sizeof(schedMenuTime));
 
+    MH.serPtr()->println("\n");
     SchedMan.printMenu();
 }
 
 void saveSchedMenu()
 {
+    SchedMenuSettings.scheduleTime_afterMidnight = arrayToTime(schedMenuTime);
+    
     switch (currentZone)
     {
         case 1:
@@ -310,6 +330,7 @@ void saveSchedMenu()
             StoreEE.zone1durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone1scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone1lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone1scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 2:
@@ -321,6 +342,7 @@ void saveSchedMenu()
             StoreEE.zone2durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone2scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone2lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone2scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 3:
@@ -332,6 +354,7 @@ void saveSchedMenu()
             StoreEE.zone3durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone3scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone3lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone3scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         case 4:
@@ -343,6 +366,7 @@ void saveSchedMenu()
             StoreEE.zone4durationToWater_min = SchedMenuSettings.durationToWater_min;
             StoreEE.zone4scheduleMode = SchedMenuSettings.schedMode;
             StoreEE.zone4lastWaterTime = SchedMenuSettings.lastWaterTime;
+            StoreEE.zone4scheduleTime_afterMidnight = (double)SchedMenuSettings.scheduleTime_afterMidnight;
             break;
         }
         default:
@@ -351,13 +375,13 @@ void saveSchedMenu()
     }
 
     GM.m_zones[currentZone - 1]->name(SchedMenuSettings.name);
-    GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->dryThreshold(SchedMenuSettings.dryThresh);
     GM.m_zones[currentZone - 1]->wetThreshold(SchedMenuSettings.wetThresh);
-    GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
+    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr(SchedMenuSettings.timeBetweenWatering_hr);
     GM.m_zones[currentZone - 1]->durationToWater_min(SchedMenuSettings.durationToWater_min);
-    GM.m_zones[currentZone - 1]->timeBetweenWatering_hr((time_t)SchedMenuSettings.timeBetweenWatering_hr);
+    GM.m_zones[currentZone - 1]->scheduleMode((ScheduleMode)SchedMenuSettings.schedMode);
     GM.m_zones[currentZone - 1]->lastWaterTime(SchedMenuSettings.lastWaterTime);
+    GM.m_zones[currentZone - 1]->scheduleTime_afterMidnight(SchedMenuSettings.scheduleTime_afterMidnight);
 
     delay(100);
 
@@ -365,3 +389,9 @@ void saveSchedMenu()
     MH.serPtr()->print("Settings saved for ");
     MH.serPtr()->println(SchedMenuSettings.name);
 }
+
+void saveAllZoneInfo()
+{
+    GM.saveAllZones();
+}
+
